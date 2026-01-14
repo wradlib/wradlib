@@ -34,8 +34,8 @@ __all__ = [
     "QuadriArea",
     "interpolate",
     "interpolate_polar",
-    "cart_to_irregular_interp",
-    "cart_to_irregular_spline",
+    "griddata",
+    "map_coordinates",
     "IpolMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -1663,6 +1663,16 @@ def _interpolate_polar_xarray(obj, mask, **kwargs):
 
 
 def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
+    util.warn(
+        "`cart_to_irregular_interp` is deprecated; use `griddata` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return griddata(cartgrid, values, newgrid, **kwargs)
+
+
+@singledispatch
+def griddata(cartgrid, values, newgrid, **kwargs):
     """
     Interpolate array ``values`` defined by cartesian coordinate array
     ``cartgrid`` to new coordinates defined by ``newgrid`` using
@@ -1704,7 +1714,153 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     return interp
 
 
+@griddata.register(xr.DataArray)
+def _griddata_xarray(src, trg, **kwargs):
+    """Interpolate src DataArray onto irregular trg coordinates using scipy.griddata.
+
+    Parameters
+    ----------
+    src : xr.DataArray
+        Source 2D data (y, x) or with extra dims.
+    trg : xr.DataArray
+        Target coordinates (must have 'y' and 'x').
+    method : str
+        Interpolation method: 'linear', 'nearest', 'cubic'.
+    kwargs : dict
+        Additional kwargs passed to griddata (e.g., fill_value).
+    """
+    kwargs.setdefault("fill_value", np.nan)
+
+    def _griddata_2d(src_x, src_y, values, trg_x, trg_y, **kwargs):
+        return sinterp.griddata((src_x, src_y), values, (trg_x, trg_y), **kwargs)
+
+    order = dict(nearest=0, linear=1, cubic=3)
+    kwargs.setdefault("method", "linear")
+
+    src = util.crop(src, trg, pad=order[kwargs.get("method")])
+
+    src2 = src.stack(points1=src.dims)
+    trg2 = trg.stack(points2=trg.dims)
+
+    out = xr.apply_ufunc(
+        _griddata_2d,
+        src2["x"],
+        src2["y"],
+        src2,
+        trg2["x"],
+        trg2["y"],
+        input_core_dims=[
+            ["points1"],
+            ["points1"],
+            ["points1"],
+            ["points2"],
+            ["points2"],
+        ],
+        output_core_dims=[["points2"]],
+        vectorize=False,
+        dask="parallelized",
+        kwargs=kwargs,
+        output_dtypes=[src.dtype],
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+
+    return (
+        out.unstack("points2")
+        .transpose(*trg.dims)
+        .assign_coords(trg.coords)
+        .rename(src.name)
+        .assign_attrs(src.attrs)
+    )
+
+
+def _cartesian_index(x_trg, y_trg, x_src, y_src, *, origin):
+    nx = x_src.size
+    ny = y_src.size
+
+    cxmin = x_src.min()
+    cxmax = x_src.max()
+    cymin = y_src.min()
+    cymax = y_src.max()
+
+    xi = (nx - 1) * (x_trg - cxmin) / (cxmax - cxmin)
+
+    if origin == "lower":
+        yi = (ny - 1) * (y_trg - cymin) / (cymax - cymin)
+    else:
+        yi = ny - (ny - 1) * (y_trg - cymin) / (cymax - cymin)
+
+    return xi, yi
+
+
+@singledispatch
+def cartesian_to_indices(cartgrid, newgrid, *, origin="lower"):
+    """
+    Compute floating-point indices into ``values`` for spline interpolation.
+
+    Parameters
+    ----------
+    cartgrid : ndarray
+        (ny, nx, 2) array defining cartesian grid (x/y or lon/lat)
+    newgrid : ndarray
+        (..., 2) array defining target coordinates
+    origin : {"lower", "upper"}
+
+    Returns
+    -------
+    xi, yi : ndarray
+        Floating-point indices with shape newgrid.shape[:-1]
+    """
+    x_src = cartgrid[0, ..., 0]
+    y_src = cartgrid[..., 0, 1]
+
+    x_trg = newgrid[..., 0].ravel()
+    y_trg = newgrid[..., 1].ravel()
+
+    xi, yi = _cartesian_index(
+        x_trg,
+        y_trg,
+        x_src,
+        y_src,
+        origin=origin,
+    )
+
+    return xi, yi
+
+
+@cartesian_to_indices.register(xr.DataArray)
+def _cartesian_to_indices_xarray(src, trg, *, origin="lower"):
+    """xarray-native precomputation of spline indices."""
+    x_src = src.coords["x"]
+    y_src = src.coords["y"]
+
+    x_trg = trg.coords["x"].stack(points=trg.coords["x"].dims)
+    y_trg = trg.coords["y"].stack(points=trg.coords["y"].dims)
+
+    xi, yi = _cartesian_index(
+        x_trg,
+        y_trg,
+        x_src,
+        y_src,
+        origin=origin,
+    )
+
+    return xr.Dataset(
+        {"xi": xi, "yi": yi},
+        coords={"points": x_trg.points},
+    )
+
+
 def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
+    util.warn(
+        "`cart_to_irregular_spline` is deprecated; use `map_coordinates` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return map_coordinates(cartgrid, values, newgrid, **kwargs)
+
+
+@singledispatch
+def map_coordinates(cartgrid, values, newgrid, **kwargs):
     """
     Map array ``values`` defined by cartesian coordinate array ``cartgrid``
     to new coordinates defined by ``newgrid`` using spline interpolation.
@@ -1731,38 +1887,60 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     --------
     See :ref:`notebooks:notebooks/beamblockage/beamblockage:preprocessing the dem`.
     """
+    kwargs.setdefault("mode", "nearest")
+    kwargs.setdefault("cval", np.nan)
+    kwargs.setdefault("order", 1)
 
-    # TODO: dimension checking
-    newshape = newgrid.shape[:-1]
+    xi, yi = cartesian_to_indices(
+        cartgrid,
+        newgrid,
+        origin=util.get_raster_origin(cartgrid),
+    )
 
-    xi = newgrid[..., 0].ravel()
-    yi = newgrid[..., 1].ravel()
-
-    nx = cartgrid.shape[1]
-    ny = cartgrid.shape[0]
-
-    cxmin = np.min(cartgrid[..., 0])
-    cxmax = np.max(cartgrid[..., 0])
-    cymin = np.min(cartgrid[..., 1])
-    cymax = np.max(cartgrid[..., 1])
-
-    # this functionality finds the floating point
-    # indices into the value array (0:nx-1)
-    # can be transferred into separate function
-    # if necessary
-    xi = (nx - 1) * (xi - cxmin) / (cxmax - cxmin)
-
-    # check origin to calculate y index
-    if util.get_raster_origin(cartgrid) == "lower":
-        yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
-    else:
-        yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
-
-    # interpolation by map_coordinates
     interp = ndimage.map_coordinates(values, [yi, xi], **kwargs)
-    interp = interp.reshape(newshape)
+    return interp.reshape(newgrid.shape[:-1])
 
-    return interp
+
+@map_coordinates.register(xr.DataArray)
+def _map_coordinates_xarray(src, trg, **kwargs):
+    """
+    Apply spline interpolation to an xarray DataArray.
+    """
+    kwargs.setdefault("mode", "nearest")
+    kwargs.setdefault("cval", np.nan)
+    kwargs.setdefault("order", 1)
+
+    src = util.crop(src, trg, pad=kwargs.get("order"))
+
+    y = src.coords["y"]
+    origin = "lower" if y[1] > y[0] else "upper"
+
+    indices = cartesian_to_indices(src, trg, origin=origin)
+
+    def _map_coordinates_2d(arr, yi, xi, **kwargs):
+        coords = np.vstack([yi, xi])
+        return ndimage.map_coordinates(arr, coords, **kwargs)
+
+    out = xr.apply_ufunc(
+        _map_coordinates_2d,
+        src,
+        indices["yi"],
+        indices["xi"],
+        input_core_dims=[["y", "x"], ["points"], ["points"]],
+        output_core_dims=[["points"]],
+        vectorize=False,
+        dask="parallelized",
+        kwargs=kwargs,
+        output_dtypes=[src.dtype],
+    )
+
+    return (
+        out.unstack("points")
+        .transpose(*trg.dims)
+        .assign_coords(trg.coords)
+        .rename(src.name)
+        .assign_attrs(src.attrs)
+    )
 
 
 class IpolMethods(XarrayMethods):
@@ -1774,6 +1952,27 @@ class IpolMethods(XarrayMethods):
             return interpolate_polar(self, *args, **kwargs)
         else:
             return interpolate_polar(self._obj, *args, **kwargs)
+
+    @docstring(cartesian_to_indices)
+    def cartesian_to_indices(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return cartesian_to_indices(self, *args, **kwargs)
+        else:
+            return cartesian_to_indices(self._obj, *args, **kwargs)
+
+    @docstring(griddata)
+    def griddata(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return griddata(self, *args, **kwargs)
+        else:
+            return griddata(self._obj, *args, **kwargs)
+
+    @docstring(map_coordinates)
+    def map_coordinates(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return map_coordinates(self, *args, **kwargs)
+        else:
+            return map_coordinates(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -40,3 +40,9 @@ def gamic_swp():
     fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
     swp = xr.open_dataset(fname, engine="gamic", group="sweep_0")
     return swp
+
+
+@pytest.fixture(scope="session")
+def dem():
+    fname = wradlib_data.DATASETS.fetch("geo/bonn_new.tif")
+    return xr.open_dataset(fname, engine="rasterio")

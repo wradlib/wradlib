@@ -525,26 +525,26 @@ def reg_data():
     yield TestRegularToIrregular
 
 
-def test_cart_to_irregular_interp(reg_data):
-    newvalues = ipol.cart_to_irregular_interp(
+def test_griddata(reg_data):
+    newvalues = ipol.griddata(
         reg_data.cartgrid, reg_data.values, reg_data.newgrid, method="linear"
     )
     assert np.allclose(newvalues, reg_data.result)
 
 
-def test_cart_to_irregular_spline(reg_data):
-    newvalues = ipol.cart_to_irregular_spline(
+def test_map_coordinates(reg_data):
+    newvalues = ipol.map_coordinates(
         reg_data.cartgrid, reg_data.values, reg_data.newgrid, order=1, prefilter=False
     )
     assert np.allclose(newvalues, reg_data.result)
 
 
-def test_cart_to_irregular_equality(reg_data):
+def test_griddata_map_coordinates_equality(reg_data):
     assert np.allclose(
-        ipol.cart_to_irregular_interp(
+        ipol.griddata(
             reg_data.cartgrid, reg_data.values, reg_data.newgrid, method="linear"
         ),
-        ipol.cart_to_irregular_spline(
+        ipol.map_coordinates(
             reg_data.cartgrid,
             reg_data.values,
             reg_data.newgrid,
@@ -552,3 +552,72 @@ def test_cart_to_irregular_equality(reg_data):
             prefilter=False,
         ),
     )
+
+
+def test_map_coordinates_numpy_vs_xarray(gamic_swp, dem):
+
+    # georeference sweep
+    swp = gamic_swp.wrl.georef.georeference(crs=dem.spatial_ref)
+
+    order = 1
+
+    # extract band, coarsen to reduce memory footprint
+    band = (
+        dem.coarsen(x=10, y=10, boundary="trim")
+        .mean()["band_data"]
+        .isel(band=0)
+        .wrl.util.crop(swp, pad=order)
+    )
+
+    # xarray
+    dem_xr = band.chunk()
+    out_xr = dem_xr.wrl.ipol.map_coordinates(swp, order=order)
+
+    # numpy
+    dem_values = band.data
+    X, Y = np.meshgrid(band["x"].data, band["y"].data)
+    cartgrid = np.stack([X, Y], axis=-1)
+    newgrid = np.stack([swp["x"].data.ravel(), swp["y"].data.ravel()], axis=-1)
+    out_np = ipol.map_coordinates(cartgrid, dem_values, newgrid, order=order)
+    out_np = out_np.reshape(swp["x"].shape)  # match sweep shape
+
+    out_np2 = ipol.griddata(cartgrid, dem_values, newgrid, method="linear")
+    out_np2 = out_np.reshape(swp["x"].shape)
+
+    np.testing.assert_allclose(out_np, out_xr.data, rtol=1e-6)
+    np.testing.assert_allclose(out_np, out_np2, rtol=1e-6)
+
+    with pytest.warns(DeprecationWarning):
+        ipol.cart_to_irregular_spline(cartgrid, dem_values, newgrid, order=order)
+
+
+def test_griddata_numpy_vs_xarray(gamic_swp, dem):
+
+    # georeference sweep
+    swp = gamic_swp.wrl.georef.georeference(crs=dem.spatial_ref)
+
+    # extract band, coarsen to prevent memory explosion
+    order = 1
+    band = (
+        dem.coarsen(x=10, y=10, boundary="trim")
+        .mean()["band_data"]
+        .isel(band=0)
+        .wrl.util.crop(swp, pad=order)
+    )
+
+    # xarray
+    dem_xr = band.chunk()
+    out_xr = dem_xr.wrl.ipol.griddata(swp.chunk(), method="linear")
+
+    # numpy
+    dem_values = band.copy().data
+    X, Y = np.meshgrid(band["x"].data, band["y"].data)
+    cartgrid = np.stack([X, Y], axis=-1)
+    newgrid = np.stack([swp["x"].data.ravel(), swp["y"].data.ravel()], axis=-1)
+    out_np = ipol.griddata(cartgrid, dem_values, newgrid, method="linear")
+    out_np = out_np.reshape(swp["x"].shape)  # match sweep shape
+
+    np.testing.assert_allclose(out_np, out_xr.data, rtol=1e-6)
+
+    with pytest.warns(DeprecationWarning):
+        ipol.cart_to_irregular_interp(cartgrid, dem_values, newgrid, method="linear")
