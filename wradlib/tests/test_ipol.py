@@ -127,6 +127,52 @@ def test_cov_cau():
     )
 
 
+def test_nearest_xarray(gamic_swp, dem):
+    swp = (
+        gamic_swp.copy()
+        .set_coords("sweep_mode")
+        .isel(range=slice(0, 100))
+        .wrl.georef.georeference(crs=dem.spatial_ref)
+    )
+    swp = swp.expand_dims(time2=1)
+
+    # extract band, coarsen to prevent memory explosion
+    order = 1
+    band = (
+        dem.coarsen(x=10, y=10, boundary="trim")
+        .mean()["band_data"]
+        .isel(band=0)
+        .wrl.util.crop(swp, pad=order)
+    )
+    trg = band.copy()
+
+    import time
+
+    start = time.time()
+    out = ipol.create_kdtree_dataset(swp, trg, k=1)
+    end = time.time()
+    print(f"Index Creation: {end - start:.3f} seconds")
+
+    start = time.time()
+    ds = ipol.interpolate_from_ix(swp.chunk(), out)
+    end = time.time()
+    print(f"Interpolation call: {end - start:.3f} seconds")
+
+    start = time.time()
+    ds = ds.compute()
+    end = time.time()
+    print(f"Interpolation compute: {end - start:.3f} seconds")
+    print(ds)
+    print(ds.data_vars)
+
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # swp.isel(time2=0).DBZH.wrl.vis.plot()
+    # plt.figure()
+    # ds.DBZH.plot()
+    # plt.show()
+
+
 def test_Nearest_1(ipol_data):
     """testing the basic behaviour of the Idw class"""
     ip = ipol.Nearest(ipol_data.src, ipol_data.trg)

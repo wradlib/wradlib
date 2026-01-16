@@ -225,7 +225,12 @@ class Nearest(IpolBase):
         self.nnearest = remove_missing + 1
 
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # scipy kwarg changed from version 1.6
+        if Version(scipy.__version__) < Version("1.6"):
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -281,6 +286,152 @@ class Nearest(IpolBase):
             return trgvals
         else:
             return np.where(dists > maxdist, np.nan, trgvals)
+
+
+def _interp_from_ix(src_vals, ix, **kwargs):
+    """Nearest interpolator numpy implementation
+    src_vals : (npoints1)
+    ix       : (npoints2, k)
+    returns  : (ny, nx)
+    """
+    nx = kwargs.get("nx")
+    ny = kwargs.get("ny")
+    return src_vals[ix[:, 0]].reshape((ny, nx))
+
+
+def interpolate_from_ix(src, ix_ds):
+    """
+    Interpolate a Dataset or DataArray using precomputed KDTree indices.
+
+    Handles stacking/unstacking, applies `_interp_from_ix`,
+    and preserves coordinates like x and y.
+
+    Parameters
+    ----------
+    src : xr.Dataset or xr.DataArray
+        Dataset or DataArray to interpolate. Expected dims: (time, azimuth, range)
+    ix_ds : xr.Dataset
+        KDTree output with 'ix' indices and 'x','y' coordinates
+
+    Returns
+    -------
+    xr.Dataset or xr.DataArray
+        Interpolated data on target grid (y, x)
+    """
+    # Determine main stacking dimension
+    dim0 = src.wrl.util.dim0()  # if hasattr(src, "wrl") else "time"
+
+    # If Dataset, separate variables that will be applied with ufunc
+    if isinstance(src, xr.Dataset):
+        src_to_interp, keep = util.get_apply_ufunc_variables(src, dim0)
+    else:
+        src_to_interp = src
+
+    # Stack source and index arrays
+    src_stacked = src_to_interp.stack(npoints1=("azimuth", "range"))
+    ix_stacked = ix_ds.ix.stack(npoints2=("y", "x"))
+
+    nx = ix_ds.ix.sizes["x"]
+    ny = ix_ds.ix.sizes["y"]
+
+    # Determine vectorization
+    vectorize = not set(src_stacked.dims) <= {"npoints1"}
+
+    # Determine output dtypes
+    if isinstance(src_stacked, xr.DataArray):
+        output_dtypes = [src_stacked.dtype]
+    else:
+        output_dtypes = [src_stacked[list(src_stacked.data_vars.keys())[0]].dtype]
+
+    # Apply the interpolation
+    out = xr.apply_ufunc(
+        _interp_from_ix,
+        src_stacked,
+        ix_stacked,
+        input_core_dims=[["npoints1"], ["npoints2", "k"]],
+        output_core_dims=[["y", "x"]],
+        vectorize=vectorize,
+        dask="parallelized",
+        kwargs={"nx": nx, "ny": ny},
+        output_dtypes=output_dtypes,
+        output_sizes={"x": nx, "y": ny},
+        on_missing_core_dim="copy",
+    )
+
+    # Restore attributes and merge with kept variables if Dataset
+    if isinstance(src, xr.DataArray):
+        out.attrs = src.attrs
+        out.name = src.name
+    else:
+        out = xr.merge([out, keep])
+
+    # Add x, y coordinates from ix_ds
+    out = out.assign_coords({k: v for k, v in ix_ds.coords.items() if k in ["x", "y"]})
+
+    return out
+
+
+def create_kdtree_dataset(
+    src, trg, k=1, src_coords=("x", "y"), trg_coords=("x", "y"), **kwargs
+):
+    """
+    Create xarray.Dataset with KDTree indices and distances derived from src and trg.
+
+    src:
+        x(azimuth, range), y(azimuth, range)
+    trg:
+        x(x), y(y)
+
+    Returns
+    -------
+    xr.Dataset:
+        ix(y, x, k)
+        dists(y, x, k)
+    """
+    # src coordinate prep
+    src_x = src.coords[src_coords[0]]
+    src_y = src.coords[src_coords[1]]
+
+    src_x_stacked = src_x.stack(npoints1=src_x.dims)
+    src_y_stacked = src_y.stack(npoints1=src_y.dims)
+
+    # final KDTree src
+    src_points = np.column_stack([src_x_stacked.values, src_y_stacked.values])
+
+    # trg coordinate prep
+    trg_x_1d = trg.coords[trg_coords[0]]
+    trg_y_1d = trg.coords[trg_coords[1]]
+
+    trg_x_2d, trg_y_2d = xr.broadcast(trg_x_1d, trg_y_1d)
+    trg_x_stacked = trg_x_2d.stack(npoints2=trg_x_2d.dims)
+    trg_y_stacked = trg_y_2d.stack(npoints2=trg_y_2d.dims)
+
+    # final KDTree trg
+    trg_points = np.column_stack([trg_x_stacked.values, trg_y_stacked.values])
+
+    # build tree
+    kwargs.setdefault("balanced_tree", False)
+    tree = spatial.cKDTree(src_points, **kwargs)
+    dists, ix = tree.query(trg_points, k=k, workers=-1)
+    if dists.ndim == 1:
+        dists = dists[:, np.newaxis]
+        ix = ix[:, np.newaxis]
+
+    # return ix/dists as Dataset
+    out = xr.Dataset(
+        {
+            "ix": (["npoints2", "k"], ix),
+            "dists": (["npoints2", "k"], dists),
+        },
+        coords={
+            "npoints2": trg_x_stacked["npoints2"],
+            "k": np.arange(k),
+        },
+    )
+
+    out = out.unstack("npoints2")
+
+    return out
 
 
 class Idw(IpolBase):
@@ -1079,8 +1230,13 @@ class OrdinaryKriging(IpolBase):
         else:
             self.nnearest = nnearest
 
-        # tree query
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # query tree
+        # scipy kwarg changed from version 1.6
+        if Version(scipy.__version__) < Version("1.6"):
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -1270,7 +1426,12 @@ class ExternalDriftKriging(IpolBase):
         else:
             self.nnearest = nnearest
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # scipy kwarg changed from version 1.6
+        if Version(scipy.__version__) < Version("1.6"):
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
