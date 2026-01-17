@@ -1442,6 +1442,7 @@ def test_get_vector_coordinates(vec_data):
     x, attrs = georef.get_vector_coordinates(layer, key="FID", src_crs=vec_data.crs)
     assert attrs == list(range(13))
 
+    layer.ResetReading()
     x, attrs = georef.get_vector_coordinates(layer, src_crs=vec_data.crs)
     y = []
     layer.ResetReading()
@@ -1452,7 +1453,7 @@ def test_get_vector_coordinates(vec_data):
             y.append(georef.ogr_to_numpy(geom))
     y = np.array(y, dtype=object)
     for x1, y1 in zip(x, y, strict=True):
-        np.testing.assert_allclose(x1, y1)
+        np.testing.assert_allclose(x1.astype("float64"), y1.astype("float64"))
 
     layer.ResetReading()
     x, attrs = georef.get_vector_coordinates(
