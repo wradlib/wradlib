@@ -864,7 +864,7 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     """
 
     def _classify_echo_fuzzy_wrapper(*args, mom=None, **kwargs):
-        dat = {name: value for name, value in zip(mom, args)}
+        dat = {name: value for name, value in zip(mom, args, strict=True)}
         return classify_echo_fuzzy(dat, **kwargs)
 
     # all moments that are not derived automatically

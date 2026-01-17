@@ -20,5 +20,6 @@ This section provides a collection of example code snippets to make users famili
 ```{toctree}
 :hidden:
 :maxdepth: 2
+Polar to Cartesian <polar_to_cartesian>
 Cartesian to Polar <cartesian_to_polar>
 ```

@@ -544,7 +544,9 @@ def correct_attenuation_constrained(
             b_used[beams2correct] = b
             # Indexing threshold exceeding beams
             incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool_)
-            for constraint, constraint_arg in zip(constraints, constraint_args):
+            for constraint, constraint_arg in zip(
+                constraints, constraint_args, strict=True
+            ):
                 incorrectbeams = np.logical_or(
                     incorrectbeams, constraint(tmp_gateset, pia, *constraint_arg)
                 )

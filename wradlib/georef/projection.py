@@ -565,7 +565,7 @@ def _reproject_xarray(obj, **kwargs):
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
 
-    for c, v in zip(coords, out):
+    for c, v in zip(coords, out, strict=True):
         obj = obj.assign_coords({c: v})
 
     # set target crs to obj

@@ -77,9 +77,9 @@ class PolarNeighbours:
         self.binx = bin_coords[..., 0].ravel()
         self.biny = bin_coords[..., 1].ravel()
         # compute the KDTree
-        tree = spatial.KDTree(list(zip(self.binx, self.biny)))
+        tree = spatial.KDTree(list(zip(self.binx, self.biny, strict=True)))
         # query the tree for nearest neighbours
-        self.dist, self.ix = tree.query(list(zip(x, y)), k=nnear)
+        self.dist, self.ix = tree.query(list(zip(x, y, strict=True)), k=nnear)
 
     def extract(self, vals):
         """Extracts the values from an array of shape (azimuth angles, \

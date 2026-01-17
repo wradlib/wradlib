@@ -45,15 +45,13 @@ from functools import reduce, singledispatch
 
 import numpy as np
 import scipy
+import xarray as xr
 from packaging.version import Version
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
 
-# from xarray import DataArray, apply_ufunc
 from wradlib import georef, util, zonalstats
 from wradlib.util import XarrayMethods, docstring
-
-xr = util.import_optional("xarray")
 
 
 class MissingSourcesError(Exception):
@@ -173,6 +171,47 @@ class IpolBase:
             return vals
 
 
+def _query_tree(tree, trg, **kwargs):
+    if Version(scipy.__version__) < Version("1.6"):
+        kwargs.setdefault("n_jobs", -1)
+    else:
+        kwargs.setdefault("workers", -1)
+    dists, ix = tree.query(trg, **kwargs)
+    # avoid bug, if there is only one neighbor at all
+    if dists.ndim == 1:
+        dists = dists[:, np.newaxis]
+        ix = ix[:, np.newaxis]
+    return dists, ix
+
+
+def _create_tree(src, **kwargs):
+    # plant a tree, use unbalanced tree as default
+    kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+    return spatial.cKDTree(src, **kwargs)
+
+
+def _call_nearest(vals, ix, dists, n=1, maxdist=None, **kwargs):
+    # get first neighbour
+    trgvals = vals[ix[:, 0]]
+    dist_n = dists[..., 0].copy()
+
+    # iteratively fill NaN with next neighbours
+    isnan = np.isnan(trgvals)
+    if n > 1 & np.count_nonzero(isnan):
+        for i in range(n - 1):
+            nanidx = np.argwhere(isnan)[..., 0]
+            trgvals[isnan] = vals[ix[:, i + 1]][isnan]
+            dist_n[nanidx] = dists[..., i + 1][nanidx]
+            isnan = np.isnan(trgvals)
+            if not np.count_nonzero(isnan):
+                break
+
+    if maxdist is None:
+        return trgvals
+    else:
+        return np.where(dist_n > maxdist, np.nan, trgvals)
+
+
 class Nearest(IpolBase):
     """
     Nearest(src, trg)
@@ -205,15 +244,15 @@ class Nearest(IpolBase):
     """
 
     def __init__(self, src, trg, *, remove_missing=0, **kwargs):
+        query_kwargs = kwargs.pop("query_kwargs", {})
+
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
-            # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
-            self.tree = spatial.cKDTree(src, **kwargs)
+            self.tree = _create_tree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -225,16 +264,9 @@ class Nearest(IpolBase):
         self.nnearest = remove_missing + 1
 
         # query tree
-        # scipy kwarg changed from version 1.6
-        if Version(scipy.__version__) < Version("1.6"):
-            query_kwargs = dict(n_jobs=-1)
-        else:
-            query_kwargs = dict(workers=-1)
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
-        # avoid bug, if there is only one neighbor at all
-        if self.dists.ndim == 1:
-            self.dists = self.dists[:, np.newaxis]
-            self.ix = self.ix[:, np.newaxis]
+        self.dists, self.ix = _query_tree(
+            self.tree, trg, k=self.nnearest, **query_kwargs
+        )
 
     def __call__(self, vals, *, maxdist=None):
         """
@@ -266,40 +298,26 @@ class Nearest(IpolBase):
         """
         self._check_shape(vals)
 
-        # get first neighbour
-        trgvals = vals[self.ix[:, 0]]
-        dists = self.dists[..., 0].copy()
-
-        # iteratively fill NaN with next neighbours
-        isnan = np.isnan(trgvals)
-        nanidx = np.argwhere(isnan)[..., 0]
-        if self.nnearest > 1 & np.count_nonzero(isnan):
-            for i in range(self.nnearest - 1):
-                trgvals[isnan] = vals[self.ix[:, i + 1]][isnan]
-                dists[nanidx] = self.dists[..., i + 1][nanidx]
-                isnan = np.isnan(trgvals)
-                nanidx = np.argwhere(isnan)[..., 0]
-                if not np.count_nonzero(isnan):
-                    break
-
-        if maxdist is None:
-            return trgvals
-        else:
-            return np.where(dists > maxdist, np.nan, trgvals)
+        return _call_nearest(
+            vals, self.ix, self.dists, n=self.nnearest, maxdist=maxdist
+        )
 
 
-def _interp_from_ix(src_vals, ix, **kwargs):
+def _interp_from_ix(src_vals, ix, dists, **kwargs):
     """Nearest interpolator numpy implementation
     src_vals : (npoints1)
     ix       : (npoints2, k)
     returns  : (ny, nx)
     """
-    nx = kwargs.get("nx")
-    ny = kwargs.get("ny")
-    return src_vals[ix[:, 0]].reshape((ny, nx))
+    nx = kwargs.pop("nx")
+    ny = kwargs.pop("ny")
+    func = kwargs.pop("func")
+    out = func(src_vals, ix, dists, **kwargs)
+    out = out.reshape((ny, nx))
+    return out
 
 
-def interpolate_from_ix(src, ix_ds):
+def interpolate_from_ix(src, ix_ds, **kwargs):
     """
     Interpolate a Dataset or DataArray using precomputed KDTree indices.
 
@@ -318,6 +336,12 @@ def interpolate_from_ix(src, ix_ds):
     xr.Dataset or xr.DataArray
         Interpolated data on target grid (y, x)
     """
+    method = kwargs.get("method")  # , "nearest")
+    METHODS = dict(
+        nearest=_call_nearest,
+        inverse_distance=_call_inverse_distance_weighting,
+    )
+    kwargs.update({"func": METHODS[method]})
     # Determine main stacking dimension
     dim0 = src.wrl.util.dim0()  # if hasattr(src, "wrl") else "time"
 
@@ -329,7 +353,7 @@ def interpolate_from_ix(src, ix_ds):
 
     # Stack source and index arrays
     src_stacked = src_to_interp.stack(npoints1=("azimuth", "range"))
-    ix_stacked = ix_ds.ix.stack(npoints2=("y", "x"))
+    ix_ds_stacked = ix_ds.stack(npoints2=("y", "x"))
 
     nx = ix_ds.ix.sizes["x"]
     ny = ix_ds.ix.sizes["y"]
@@ -343,16 +367,18 @@ def interpolate_from_ix(src, ix_ds):
     else:
         output_dtypes = [src_stacked[list(src_stacked.data_vars.keys())[0]].dtype]
 
+    kwargs.update({"nx": nx, "ny": ny})
     # Apply the interpolation
     out = xr.apply_ufunc(
         _interp_from_ix,
         src_stacked,
-        ix_stacked,
-        input_core_dims=[["npoints1"], ["npoints2", "k"]],
+        ix_ds_stacked.ix,
+        ix_ds_stacked.dists,
+        input_core_dims=[["npoints1"], ["npoints2", "k"], ["npoints2", "k"]],
         output_core_dims=[["y", "x"]],
         vectorize=vectorize,
         dask="parallelized",
-        kwargs={"nx": nx, "ny": ny},
+        kwargs=kwargs,
         output_dtypes=output_dtypes,
         output_sizes={"x": nx, "y": ny},
         on_missing_core_dim="copy",
@@ -372,7 +398,7 @@ def interpolate_from_ix(src, ix_ds):
 
 
 def create_kdtree_dataset(
-    src, trg, k=1, src_coords=("x", "y"), trg_coords=("x", "y"), **kwargs
+    src, trg, src_coords=("x", "y"), trg_coords=("x", "y"), **kwargs
 ):
     """
     Create xarray.Dataset with KDTree indices and distances derived from src and trg.
@@ -388,6 +414,14 @@ def create_kdtree_dataset(
         ix(y, x, k)
         dists(y, x, k)
     """
+    tree_kwargs = util.get_keys(
+        kwargs, ["leafsize", "compact_nodes", "copy_data", "balanced_tree", "boxsize"]
+    )
+    query_kwargs = util.get_keys(
+        kwargs, ["k", "eps", "p", "distance_upper_bound", "workers"]
+    )
+    query_kwargs.setdefault("k", 1)
+
     # src coordinate prep
     src_x = src.coords[src_coords[0]]
     src_y = src.coords[src_coords[1]]
@@ -410,12 +444,9 @@ def create_kdtree_dataset(
     trg_points = np.column_stack([trg_x_stacked.values, trg_y_stacked.values])
 
     # build tree
-    kwargs.setdefault("balanced_tree", False)
-    tree = spatial.cKDTree(src_points, **kwargs)
-    dists, ix = tree.query(trg_points, k=k, workers=-1)
-    if dists.ndim == 1:
-        dists = dists[:, np.newaxis]
-        ix = ix[:, np.newaxis]
+    tree_kwargs.setdefault("balanced_tree", False)
+    tree = spatial.cKDTree(src_points, **tree_kwargs)
+    dists, ix = _query_tree(tree, trg_points, **query_kwargs)
 
     # return ix/dists as Dataset
     out = xr.Dataset(
@@ -425,13 +456,46 @@ def create_kdtree_dataset(
         },
         coords={
             "npoints2": trg_x_stacked["npoints2"],
-            "k": np.arange(k),
+            "k": np.arange(query_kwargs["k"]),
         },
     )
 
     out = out.unstack("npoints2")
 
     return out
+
+
+def _call_inverse_distance_weighting(
+    vals, ix, dists, p=2.0, remove_missing=False, maxdist=None, **kwargs
+):
+    weights = 1.0 / dists**p
+
+    # if maxdist isn't given, take the maximum distance
+    if maxdist is not None:
+        outside = dists > maxdist
+        weights[outside] = 0
+
+    # take care of point coincidence
+    weights[np.isposinf(weights)] = 1e12
+
+    # shape handling (time, ensemble etc)
+    wshape = weights.shape
+    weights.shape = wshape + ((vals.ndim - 1) * (1,))
+
+    # expand vals to trg grid
+    trgvals = vals[ix]
+
+    # nan handling
+    if remove_missing:
+        isnan = np.isnan(trgvals)
+        weights = np.broadcast_to(weights, isnan.shape)
+        masked_weights = np.ma.array(weights, mask=isnan)
+
+        interpol = np.nansum(weights * trgvals, axis=1) / np.sum(masked_weights, axis=1)
+    else:
+        interpol = np.sum(weights * trgvals, axis=1) / np.sum(weights, axis=1)
+
+    return interpol
 
 
 class Idw(IpolBase):
@@ -472,15 +536,14 @@ class Idw(IpolBase):
     """
 
     def __init__(self, src, trg, *, nnearest=4, p=2.0, remove_missing=False, **kwargs):
+        query_kwargs = kwargs.pop("query_kwargs", {})
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
-            # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
-            self.tree = spatial.cKDTree(src, **kwargs)
+            self.tree = _create_tree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -504,16 +567,9 @@ class Idw(IpolBase):
 
         self.p = p
         # query tree
-        # scipy kwarg changed from version 1.6
-        if Version(scipy.__version__) < Version("1.6"):
-            query_kwargs = dict(n_jobs=-1)
-        else:
-            query_kwargs = dict(workers=-1)
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
-        # avoid bug, if there is only one neighbor at all
-        if self.dists.ndim == 1:
-            self.dists = self.dists[:, np.newaxis]
-            self.ix = self.ix[:, np.newaxis]
+        self.dists, self.ix = _query_tree(
+            self.tree, trg, k=self.nnearest, **query_kwargs
+        )
 
     def __call__(self, vals, *, maxdist=None):
         """
@@ -545,36 +601,14 @@ class Idw(IpolBase):
         """
         self._check_shape(vals)
 
-        weights = 1.0 / self.dists**self.p
-
-        # if maxdist isn't given, take the maximum distance
-        if maxdist is not None:
-            outside = self.dists > maxdist
-            weights[outside] = 0
-
-        # take care of point coincidence
-        weights[np.isposinf(weights)] = 1e12
-
-        # shape handling (time, ensemble etc)
-        wshape = weights.shape
-        weights.shape = wshape + ((vals.ndim - 1) * (1,))
-
-        # expand vals to trg grid
-        trgvals = vals[self.ix]
-
-        # nan handling
-        if self.remove_missing:
-            isnan = np.isnan(trgvals)
-            weights = np.broadcast_to(weights, isnan.shape)
-            masked_weights = np.ma.array(weights, mask=isnan)
-
-            interpol = np.nansum(weights * trgvals, axis=1) / np.sum(
-                masked_weights, axis=1
-            )
-        else:
-            interpol = np.sum(weights * trgvals, axis=1) / np.sum(weights, axis=1)
-
-        return interpol
+        return _call_inverse_distance_weighting(
+            vals,
+            self.ix,
+            self.dists,
+            p=self.p,
+            remove_missing=self.remove_missing,
+            maxdist=maxdist,
+        )
 
 
 class Linear(IpolBase):
@@ -1272,7 +1306,7 @@ class OrdinaryKriging(IpolBase):
         """Sets up the kriging system and solves it in order to obtain the
         interpolation weights of ordinary kriging.
         Also calculates the kriging estimation variance from the results"""
-        for dist, ix in zip(self.dists, self.ix):
+        for dist, ix in zip(self.dists, self.ix, strict=True):
             matrix = self._krig_matrix(self.src[ix, :])
             rhs = self._krig_rhs(dist)
             weights = np.linalg.solve(matrix, rhs)
@@ -1476,7 +1510,7 @@ class ExternalDriftKriging(IpolBase):
         Also calculates the kriging estimation variance from the results"""
         all_weights = []
         estimation_variances = []
-        for dist, ix, td in zip(self.dists, self.ix, trg_drift):
+        for dist, ix, td in zip(self.dists, self.ix, trg_drift, strict=True):
             matrix = self._krig_matrix(self.src[ix, :], src_drift[ix])
             rhs = self._krig_rhs(dist, td)
             try:
@@ -2104,6 +2138,11 @@ def _map_coordinates_xarray(src, trg, **kwargs):
     )
 
 
+def _polar_to_cart(src, trg, **kwargs):
+    ds_ix = create_kdtree_dataset(src, trg, **kwargs)
+    return interpolate_from_ix(src, ds_ix, **kwargs)
+
+
 class IpolMethods(XarrayMethods):
     """wradlib xarray SubAccessor methods for Ipol Methods."""
 
@@ -2134,6 +2173,12 @@ class IpolMethods(XarrayMethods):
             return map_coordinates(self, *args, **kwargs)
         else:
             return map_coordinates(self._obj, *args, **kwargs)
+
+    def polar_to_cart(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return _polar_to_cart(self, *args, **kwargs)
+        else:
+            return _polar_to_cart(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

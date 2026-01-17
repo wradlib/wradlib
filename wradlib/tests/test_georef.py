@@ -1451,7 +1451,7 @@ def test_get_vector_coordinates(vec_data):
             geom = feature.GetGeometryRef()
             y.append(georef.ogr_to_numpy(geom))
     y = np.array(y, dtype=object)
-    for x1, y1 in zip(x, y):
+    for x1, y1 in zip(x, y, strict=True):
         np.testing.assert_allclose(x1, y1)
 
     layer.ResetReading()

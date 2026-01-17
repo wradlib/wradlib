@@ -1479,6 +1479,11 @@ def get_dataarray(obj, arr):
     return arr
 
 
+def get_keys(kwargs, keys_to_pop):
+    new_dict = {key: kwargs[key] for key in keys_to_pop if key in kwargs}
+    return new_dict
+
+
 def crop(src, trg, pad=0):
     """
     Crop a 2D DataArray to the spatial extent of another DataArray,

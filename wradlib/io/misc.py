@@ -189,7 +189,7 @@ def get_radiosonde(wmoid, date, *, cols=None, xarray=False, **kwargs):
     names = names.split()
     units = units.split()
 
-    unitdict = {name: unit for (name, unit) in zip(names, units)}
+    unitdict = {name: unit for (name, unit) in zip(names, units, strict=True)}
 
     # read data
     with warnings.catch_warnings():

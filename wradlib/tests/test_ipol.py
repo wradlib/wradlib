@@ -134,7 +134,6 @@ def test_nearest_xarray(gamic_swp, dem):
         .isel(range=slice(0, 100))
         .wrl.georef.georeference(crs=dem.spatial_ref)
     )
-    swp = swp.expand_dims(time2=1)
 
     # extract band, coarsen to prevent memory explosion
     order = 1
@@ -154,9 +153,16 @@ def test_nearest_xarray(gamic_swp, dem):
     print(f"Index Creation: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = ipol.interpolate_from_ix(swp.chunk(), out)
+    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="nearest")
     end = time.time()
     print(f"Interpolation call: {end - start:.3f} seconds")
+
+    start = time.time()
+    kwargs = dict(method="nearest")
+    ds = swp.wrl.ipol.polar_to_cart(trg, **kwargs)
+    end = time.time()
+    print(f"Nearest Full: {end - start:.3f} seconds")
+    print(ds)
 
     start = time.time()
     ds = ds.compute()
@@ -185,6 +191,55 @@ def test_Nearest_1(ipol_data):
     # input only one flat array
     res = ip(ipol_data.vals[:, 2])
     assert np.allclose(res, np.array([3.0, 3.0, 3.0, 1.0]))
+
+
+def test_idw_xarray(gamic_swp, dem):
+    swp = (
+        gamic_swp.copy()
+        .set_coords("sweep_mode")
+        .isel(range=slice(0, 100))
+        .wrl.georef.georeference(crs=dem.spatial_ref)
+    )
+    # wwp = swp.expand_dims(time2=1)
+
+    # extract band, coarsen to prevent memory explosion
+    order = 1
+    band = (
+        dem.wrl.util.crop(swp, pad=order)
+        .coarsen(x=1, y=1, boundary="trim")
+        .mean()["band_data"]
+        .isel(band=0)
+    )
+    trg = band.copy()
+
+    import time
+
+    start = time.time()
+    out = ipol.create_kdtree_dataset(swp, trg, k=4)
+    end = time.time()
+    print(f"Index Creation: {end - start:.3f} seconds")
+    print(out)
+
+    start = time.time()
+    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="inverse_distance")
+    end = time.time()
+    print(f"Interpolation call: {end - start:.3f} seconds")
+    print(ds)
+
+    start = time.time()
+    ds = ds.compute()
+    end = time.time()
+    print(f"Interpolation compute: {end - start:.3f} seconds")
+    print(ds)
+    print(ds.data_vars)
+
+    import matplotlib.pyplot as plt
+
+    plt.figure()
+    swp.isel(time2=0, missing_dims="ignore").DBZH.wrl.vis.plot()
+    plt.figure()
+    ds.DBZH.plot()
+    plt.show()
 
 
 def test_Idw_1(ipol_data):
