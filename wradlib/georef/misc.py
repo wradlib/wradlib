@@ -13,6 +13,7 @@ Miscellaneous
 
    {}
 """
+
 __all__ = ["bin_altitude", "bin_distance", "site_distance", "GeorefMiscMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

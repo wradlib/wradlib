@@ -16,6 +16,7 @@ Note
 
    {}
 """
+
 __all__ = [
     "WradlibVariable",
 ]

@@ -7,6 +7,7 @@ wradlib_tests
 =============
 
 """
+
 import contextlib
 import importlib.util
 import io
@@ -16,7 +17,6 @@ import pytest
 from packaging.version import Version
 from wradlib import util
 from xarray import __version__ as xr_version
-
 
 wradlib_data = util.import_optional("wradlib_data", dep="devel")
 has_pooch_data = util.has_import(wradlib_data)

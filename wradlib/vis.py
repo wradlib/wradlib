@@ -14,6 +14,7 @@ Standard plotting and mapping procedures.
 
    {}
 """
+
 __all__ = [
     "plot",
     "plot_ppi_crosshair",

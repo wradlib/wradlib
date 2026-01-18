@@ -13,6 +13,7 @@ Projection Functions
 
    {}
 """
+
 __all__ = [
     "ensure_crs",
     "reproject",
@@ -853,10 +854,10 @@ def project_bounds(bounds, crs):
     lon_min, lon_max, lat_min, lat_max = bounds
     lon_mid = lon_min / 2 + lon_max / 2
     lat_mid = lat_min / 2 + lat_max / 2
-    (xmin, temp) = reproject((lon_min, lat_mid), trg_crs=crs)
-    (temp, ymin) = reproject((lon_mid, lat_min), trg_crs=crs)
-    (xmax, temp) = reproject((lon_max, lat_mid), trg_crs=crs)
-    (temp, ymax) = reproject((lon_mid, lat_max), trg_crs=crs)
+    xmin, temp = reproject((lon_min, lat_mid), trg_crs=crs)
+    temp, ymin = reproject((lon_mid, lat_min), trg_crs=crs)
+    xmax, temp = reproject((lon_max, lat_mid), trg_crs=crs)
+    temp, ymax = reproject((lon_mid, lat_max), trg_crs=crs)
     projected_bounds = (xmin, xmax, ymin, ymax)
 
     return projected_bounds

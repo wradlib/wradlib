@@ -15,6 +15,7 @@ Provide surface/terrain elevation information from SRTM data
 
    {}
 """
+
 __all__ = ["download_srtm", "get_srtm", "get_srtm_tile_names"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

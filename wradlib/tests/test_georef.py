@@ -770,11 +770,11 @@ def gdal_data():
         filename1 = "geo/bonn_new.tif"
         geofile1 = get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
-        (data, coords, crs) = georef.extract_raster_dataset(ds)
+        data, coords, crs = georef.extract_raster_dataset(ds)
         filename2 = "hdf5/belgium.comp.hdf"
         geofile2 = get_wradlib_data_file(filename2)
         ds2 = wradlib.io.open_raster(geofile2)
-        (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
+        data2, coords2, proj2 = georef.extract_raster_dataset(ds2, mode="edge")
 
         corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
 

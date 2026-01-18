@@ -18,6 +18,7 @@ Reading sweep data can be skipped by setting `loaddata=False`.
 
    {}
 """
+
 __all__ = ["read_rainbow"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

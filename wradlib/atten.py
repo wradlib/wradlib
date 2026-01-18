@@ -13,6 +13,7 @@ Attenuation Correction
 
     {}
 """
+
 __all__ = [
     "AttenuationOverflowError",
     "correct_attenuation_hb",

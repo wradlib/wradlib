@@ -13,6 +13,7 @@ Vector Functions (GDAL)
 
    {}
 """
+
 __all__ = [
     "get_vector_coordinates",
     "get_vector_points",

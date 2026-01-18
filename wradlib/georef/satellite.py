@@ -13,6 +13,7 @@ Satellite Functions
 
    {}
 """
+
 __all__ = ["correct_parallax", "dist_from_orbit", "GeorefSatelliteMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

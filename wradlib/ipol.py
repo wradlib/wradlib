@@ -22,6 +22,7 @@ This includes for example:
 
    {}
 """
+
 __all__ = [
     "IpolBase",
     "Nearest",

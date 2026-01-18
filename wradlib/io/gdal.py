@@ -11,6 +11,7 @@ GDAL Raster/Vector Data I/O
 
    {}
 """
+
 __all__ = [
     "open_vector",
     "open_raster",

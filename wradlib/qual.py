@@ -25,6 +25,7 @@ fields except that they exhibit the numpy ndarray interface.
 
    {}
 """
+
 __all__ = [
     "pulse_volume",
     "beam_block_frac",
