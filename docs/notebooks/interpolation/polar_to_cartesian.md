@@ -95,7 +95,7 @@ plt.tight_layout()
 
 ```{code-cell} python
 band_xy = band.chunk()
-inverse_distance = swp.wrl.ipol.polar_to_cart(band_xy, method="inverse_distance", k=4, p=2)
+inverse_distance = swp.wrl.ipol.polar_to_cart(band_xy, method="inverse_distance", k=4, idw_p=2)
 display(inverse_distance)
 ```
 
@@ -127,7 +127,7 @@ display(kdtree)
 ```{code-cell} python
 band_xy = band.chunk()
 nearest = swp.wrl.ipol.polar_to_cart(kdtree, method="nearest")
-inverse_distance = swp.wrl.ipol.polar_to_cart(kdtree, method="inverse_distance", p=2)
+inverse_distance = swp.wrl.ipol.polar_to_cart(kdtree, method="inverse_distance", idw_p=2)
 ```
 
 ```{code-cell} python
