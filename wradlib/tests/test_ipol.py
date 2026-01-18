@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from wradlib import georef, ipol
 
@@ -162,15 +163,24 @@ def test_nearest_xarray(gamic_swp, dem):
     ds = swp.wrl.ipol.polar_to_cart(trg, **kwargs)
     end = time.time()
     print(f"Nearest Full: {end - start:.3f} seconds")
-    print(ds)
 
     start = time.time()
     ds = ds.compute()
     end = time.time()
     print(f"Interpolation compute: {end - start:.3f} seconds")
-    print(ds)
-    print(ds.data_vars)
 
+    start = time.time()
+    kwargs = dict(method="nearest")
+    ds = swp.chunk().wrl.ipol.polar_to_cart(out, **kwargs)
+    end = time.time()
+    print(f"Nearest Full2: {end - start:.3f} seconds")
+
+    start = time.time()
+    ds = ds.compute()
+    end = time.time()
+    print(f"Interpolation compute2: {end - start:.3f} seconds")
+
+    assert isinstance(ds, xr.Dataset)
     # import matplotlib.pyplot as plt
     # plt.figure()
     # swp.isel(time2=0).DBZH.wrl.vis.plot()
@@ -218,20 +228,26 @@ def test_idw_xarray(gamic_swp, dem):
     out = ipol.create_kdtree_dataset(swp, trg, k=4)
     end = time.time()
     print(f"Index Creation: {end - start:.3f} seconds")
-    print(out)
 
     start = time.time()
     ds = ipol.interpolate_from_ix(swp.chunk(), out, method="inverse_distance")
     end = time.time()
     print(f"Interpolation call: {end - start:.3f} seconds")
-    print(ds)
 
     start = time.time()
     ds = ds.compute()
     end = time.time()
     print(f"Interpolation compute: {end - start:.3f} seconds")
-    print(ds)
-    print(ds.data_vars)
+
+    start = time.time()
+    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="inverse_distance")
+    end = time.time()
+    print(f"Interpolation call2: {end - start:.3f} seconds")
+
+    start = time.time()
+    ds = ds.compute()
+    end = time.time()
+    print(f"Interpolation compute2: {end - start:.3f} seconds")
 
     import matplotlib.pyplot as plt
 

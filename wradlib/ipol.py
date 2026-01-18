@@ -307,13 +307,13 @@ def _interp_from_ix(src_vals, ix, dists, **kwargs):
     """Nearest interpolator numpy implementation
     src_vals : (npoints1)
     ix       : (npoints2, k)
-    returns  : (ny, nx)
+    returns  : (y, x)
     """
-    nx = kwargs.pop("nx")
-    ny = kwargs.pop("ny")
+    x = kwargs.pop("x")
+    y = kwargs.pop("y")
     func = kwargs.pop("func")
     out = func(src_vals, ix, dists, **kwargs)
-    out = out.reshape((ny, nx))
+    out = out.reshape((y, x))
     return out
 
 
@@ -336,39 +336,39 @@ def interpolate_from_ix(src, ix_ds, **kwargs):
     xr.Dataset or xr.DataArray
         Interpolated data on target grid (y, x)
     """
-    method = kwargs.get("method")  # , "nearest")
+    method = kwargs.get("method")
     METHODS = dict(
         nearest=_call_nearest,
         inverse_distance=_call_inverse_distance_weighting,
     )
     kwargs.update({"func": METHODS[method]})
-    # Determine main stacking dimension
-    dim0 = src.wrl.util.dim0()  # if hasattr(src, "wrl") else "time"
+    # determine main stacking dimension
+    dim0 = src.wrl.util.dim0()
 
-    # If Dataset, separate variables that will be applied with ufunc
+    # separate variables that will be applied with ufunc
     if isinstance(src, xr.Dataset):
         src_to_interp, keep = util.get_apply_ufunc_variables(src, dim0)
     else:
         src_to_interp = src
 
-    # Stack source and index arrays
+    # stack source and index arrays
     src_stacked = src_to_interp.stack(npoints1=("azimuth", "range"))
     ix_ds_stacked = ix_ds.stack(npoints2=("y", "x"))
 
-    nx = ix_ds.ix.sizes["x"]
-    ny = ix_ds.ix.sizes["y"]
+    x = ix_ds.ix.sizes["x"]
+    y = ix_ds.ix.sizes["y"]
+    sizes = dict(x=x, y=y)
 
-    # Determine vectorization
+    # vectorization needed?
     vectorize = not set(src_stacked.dims) <= {"npoints1"}
 
-    # Determine output dtypes
+    # determine output dtypes
     if isinstance(src_stacked, xr.DataArray):
         output_dtypes = [src_stacked.dtype]
     else:
         output_dtypes = [src_stacked[list(src_stacked.data_vars.keys())[0]].dtype]
 
-    kwargs.update({"nx": nx, "ny": ny})
-    # Apply the interpolation
+    kwargs.update(sizes)
     out = xr.apply_ufunc(
         _interp_from_ix,
         src_stacked,
@@ -380,19 +380,19 @@ def interpolate_from_ix(src, ix_ds, **kwargs):
         dask="parallelized",
         kwargs=kwargs,
         output_dtypes=output_dtypes,
-        output_sizes={"x": nx, "y": ny},
+        output_sizes=sizes,
         on_missing_core_dim="copy",
     )
 
-    # Restore attributes and merge with kept variables if Dataset
-    if isinstance(src, xr.DataArray):
+    # restore attributes and merge with kept variables if Dataset
+    if isinstance(src, xr.Dataset):
+        out = xr.merge([out, keep])
+    else:
         out.attrs = src.attrs
         out.name = src.name
-    else:
-        out = xr.merge([out, keep])
 
-    # Add x, y coordinates from ix_ds
-    out = out.assign_coords({k: v for k, v in ix_ds.coords.items() if k in ["x", "y"]})
+    # re-add x, y coordinates from ix_ds
+    out = out.assign_coords(x=ix_ds.coords["x"], y=ix_ds.coords["y"])
 
     return out
 
@@ -403,9 +403,11 @@ def create_kdtree_dataset(
     """
     Create xarray.Dataset with KDTree indices and distances derived from src and trg.
 
-    src:
+    Parameters
+    ----------
+    src: xr.Dataset or xr.DataArray
         x(azimuth, range), y(azimuth, range)
-    trg:
+    trg: xr.Dataset or xr.DataArray
         x(x), y(y)
 
     Returns
@@ -461,6 +463,7 @@ def create_kdtree_dataset(
     )
 
     out = out.unstack("npoints2")
+    out.attrs = dict(source="wradlib", model="kdtree", tree_kwargs=tree_kwargs)
 
     return out
 
@@ -2139,8 +2142,12 @@ def _map_coordinates_xarray(src, trg, **kwargs):
 
 
 def _polar_to_cart(src, trg, **kwargs):
-    ds_ix = create_kdtree_dataset(src, trg, **kwargs)
-    return interpolate_from_ix(src, ds_ix, **kwargs)
+    if ~(
+        trg.attrs.get("source", None) == "wradlib"
+        and trg.attrs.get("model", None) == "kdtree"
+    ):
+        trg = create_kdtree_dataset(src, trg, **kwargs)
+    return interpolate_from_ix(src, trg, **kwargs)
 
 
 class IpolMethods(XarrayMethods):
@@ -2173,6 +2180,12 @@ class IpolMethods(XarrayMethods):
             return map_coordinates(self, *args, **kwargs)
         else:
             return map_coordinates(self._obj, *args, **kwargs)
+
+    def create_kdtree_dataset(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return create_kdtree_dataset(self, *args, **kwargs)
+        else:
+            return create_kdtree_dataset(self._obj, *args, **kwargs)
 
     def polar_to_cart(self, *args, **kwargs):
         if not isinstance(self, IpolMethods):

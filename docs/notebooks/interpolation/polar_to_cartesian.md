@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-# Interpolate data on polar coordinates to cartesian coordinates
+# Interpolate data from polar to cartesian coordinates
 
 
 ```{code-cell} python
@@ -30,14 +30,14 @@ except:
     plt.ion()
 ```
 
-## Read polar and cartesian datas
+## Read polar and cartesian data
 
 ```{code-cell} python
-filename = wradlib_data.DATASETS.fetch("geo/bonn_new.tif")
-dem = xr.open_dataset(filename, engine="rasterio")
+filename1 = wradlib_data.DATASETS.fetch("geo/bonn_new.tif")
+dem = xr.open_dataset(filename1, engine="rasterio")
 
-fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
-swp = xr.open_dataset(fname, engine="gamic", group="sweep_0")
+filename2 = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+swp = xr.open_dataset(filename2, engine="gamic", group="sweep_0")
 ```
 ## Prepare polar data set
 
@@ -69,7 +69,7 @@ band = (
 display(band)
 ```
 
-## nearest
+## Nearest neighbour
 
 ```{code-cell} python
 band_xy = band.chunk()
@@ -83,7 +83,7 @@ cmap = "HomeyerRainbow"
 vmin, vmax = 0.0, 60.0
 
 pm = swp.DBZH.wrl.vis.plot(ax=ax1, cmap=cmap, vmin=vmin, vmax=vmax)
-ax1.set_title("Original DEM")
+ax1.set_title("Original PPI")
 
 pm = nearest.DBZH.plot(ax=ax2, cmap=cmap, vmin=vmin, vmax=vmax)
 ax2.set_aspect(nearest.wrl.util.aspect())
@@ -91,7 +91,7 @@ ax2.set_title("Nearest")
 plt.tight_layout()
 ```
 
-## inverse distance
+## Inverse distance
 
 ```{code-cell} python
 band_xy = band.chunk()
@@ -105,7 +105,39 @@ cmap = "HomeyerRainbow"
 vmin, vmax = 0.0, 60.0
 
 pm = swp.DBZH.wrl.vis.plot(ax=ax1, cmap=cmap, vmin=vmin, vmax=vmax)
-ax1.set_title("Original DEM")
+ax1.set_title("Original PPI")
+
+pm = inverse_distance.DBZH.plot(ax=ax2, cmap=cmap, vmin=vmin, vmax=vmax)
+ax2.set_aspect(inverse_distance.wrl.util.aspect())
+ax2.set_title("Inverse Distance")
+
+plt.tight_layout()
+```
+
+## Precompute KDTree dataset
+
+In the above examples the KDTree is computed and queried within the function. If your geometry is fixed you can precompute the KDTree and use it in subsequent computations.
+
+```{code-cell} python
+band_xy = band.chunk()
+kdtree = swp.wrl.ipol.create_kdtree_dataset(band_xy, k=4)
+display(kdtree)
+```
+
+```{code-cell} python
+band_xy = band.chunk()
+nearest = swp.wrl.ipol.polar_to_cart(kdtree, method="nearest")
+inverse_distance = swp.wrl.ipol.polar_to_cart(kdtree, method="inverse_distance", p=2)
+```
+
+```{code-cell} python
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+cmap = "HomeyerRainbow"
+vmin, vmax = 0.0, 60.0
+
+pm = nearest.DBZH.plot(ax=ax1, cmap=cmap, vmin=vmin, vmax=vmax)
+ax1.set_aspect(nearest.wrl.util.aspect())
+ax1.set_title("Nearest")
 
 pm = inverse_distance.DBZH.plot(ax=ax2, cmap=cmap, vmin=vmin, vmax=vmax)
 ax2.set_aspect(inverse_distance.wrl.util.aspect())
