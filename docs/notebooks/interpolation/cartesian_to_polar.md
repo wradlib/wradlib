@@ -13,7 +13,6 @@ kernelspec:
 
 # Interpolate data on cartesian coordinates to polar coordinates
 
-
 ```{code-cell} python
 import numpy as np
 import matplotlib.pyplot as plt

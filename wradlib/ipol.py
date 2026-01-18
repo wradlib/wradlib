@@ -35,6 +35,8 @@ __all__ = [
     "QuadriArea",
     "interpolate",
     "interpolate_polar",
+    "create_kdtree_dataset",
+    "interpolate_from_ix",
     "griddata",
     "map_coordinates",
     "IpolMethods",
@@ -320,21 +322,18 @@ def _interp_from_ix(src_vals, ix, dists, **kwargs):
 
 def interpolate_from_ix(src, ix_ds, **kwargs):
     """
-    Interpolate a Dataset or DataArray using precomputed KDTree indices.
-
-    Handles stacking/unstacking, applies `_interp_from_ix`,
-    and preserves coordinates like x and y.
+    Interpolate a Dataset or DataArray using precomputed KDTree dataset.
 
     Parameters
     ----------
-    src : xr.Dataset or xr.DataArray
-        Dataset or DataArray to interpolate. Expected dims: (time, azimuth, range)
-    ix_ds : xr.Dataset
-        KDTree output with 'ix' indices and 'x','y' coordinates
+    src : :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
+        Dataset or DataArray to interpolate. Expected dims: (eg. azimuth, range)
+    ix_ds : :class:`xarray:xarray.Dataset'
+        KDTree output with 'ix' indices, 'dists' distances and 'x','y' coordinates
 
     Returns
     -------
-    xr.Dataset or xr.DataArray
+    :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
         Interpolated data on target grid (y, x)
     """
     method = kwargs.get("method")
@@ -402,28 +401,40 @@ def create_kdtree_dataset(
     src, trg, src_coords=("x", "y"), trg_coords=("x", "y"), **kwargs
 ):
     """
-    Create xarray.Dataset with KDTree indices and distances derived from src and trg.
+    Create :class:`xarray:xarray.Dataset' with KDTree indices and distances derived from src and trg.
 
     Parameters
     ----------
-    src: xr.Dataset or xr.DataArray
-        x(azimuth, range), y(azimuth, range)
-    trg: xr.Dataset or xr.DataArray
-        x(x), y(y)
+    src: :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
+        Source data containing spatial coordinates. It should have two dimensions,
+        typically representing x (azimuth, range) and y (azimuth, range).
+    trg: :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
+        Target data with spatial coordinates to interpolate.
+        It should also have two dimensions, designated by x and y.
+    src_coords: tuple, optional
+        A tuple of strings specifying the names of the coordinates in the source data.
+        Default is ("x", "y").
+    trg_coords: tuple, optional
+        A tuple of strings specifying the names of the coordinates in the target data.
+        Default is ("x", "y").
+    **kwargs: additional keyword arguments
+        Additional parameters that may be passed to the KDTree implementation and query.
 
     Returns
     -------
-    xr.Dataset:
+    :class:`xarray:xarray.Dataset:
         ix(y, x, k)
         dists(y, x, k)
     """
     tree_kwargs = util.get_keys(
         kwargs, ["leafsize", "compact_nodes", "copy_data", "balanced_tree", "boxsize"]
     )
+    tree_kwargs.setdefault("balanced_tree", False)
     query_kwargs = util.get_keys(
         kwargs, ["k", "eps", "p", "distance_upper_bound", "workers"]
     )
     query_kwargs.setdefault("k", 1)
+    query_kwargs.setdefault("workers", -11)
 
     # src coordinate prep
     src_x = src.coords[src_coords[0]]
@@ -447,7 +458,6 @@ def create_kdtree_dataset(
     trg_points = np.column_stack([trg_x_stacked.values, trg_y_stacked.values])
 
     # build tree
-    tree_kwargs.setdefault("balanced_tree", False)
     tree = spatial.cKDTree(src_points, **tree_kwargs)
     dists, ix = _query_tree(tree, trg_points, **query_kwargs)
 
@@ -2148,6 +2158,25 @@ def _map_coordinates_xarray(src, trg, **kwargs):
 
 
 def _polar_to_cart(src, trg, **kwargs):
+    """Interpolate polar data (eg. azimuth, range) to cartesian (x, y).
+
+    Parameters
+    ----------
+    src : :class:`xarray:xarray.DataArray` | :class:`xarray:xarray.Dataset`
+        Polar source data with 2D coordinates x(azimuth, range), y(azimuth, range).
+    trg : :class:`xarray:xarray.DataArray` | :class:`xarray:xarray.Dataset`
+        Target coordinates (must have 1D 'x' and 'y' coordintaes).
+    method : str
+        Interpolation method: 'nearest' or 'inverse_distance'.
+    kwargs : dict
+        Additional kwargs passed to :func:`wradlib.ipol.create_kdtree_dataset` and
+        :func:`wradlib.ipol.interpolate_from_ix`.
+
+    Returns
+    -------
+    interp : :class:`xarray:xarray.DataArray` | :class:`xarray:xarray.Dataset`
+        interpolated data
+    """
     if not (
         trg.attrs.get("source", None) == "wradlib"
         and trg.attrs.get("model", None) == "kdtree"
@@ -2187,12 +2216,14 @@ class IpolMethods(XarrayMethods):
         else:
             return map_coordinates(self._obj, *args, **kwargs)
 
+    @docstring(create_kdtree_dataset)
     def create_kdtree_dataset(self, *args, **kwargs):
         if not isinstance(self, IpolMethods):
             return create_kdtree_dataset(self, *args, **kwargs)
         else:
             return create_kdtree_dataset(self._obj, *args, **kwargs)
 
+    @docstring(_polar_to_cart)
     def polar_to_cart(self, *args, **kwargs):
         if not isinstance(self, IpolMethods):
             return _polar_to_cart(self, *args, **kwargs)

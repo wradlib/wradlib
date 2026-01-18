@@ -13,6 +13,7 @@ kernelspec:
 
 # Interpolate data from polar to cartesian coordinates
 
+The {{wradlib}} {mod}`wradlib.ipol` module implements several interpolator schemes, many of them based on {class}`scipy:scipy.spatial.cKDTree` class. In this notebook its shown how they are applied to {class}`xarray:xarray.Dataset` or {class}`xarray:xarray.DataArray`. 
 
 ```{code-cell} python
 import numpy as np
@@ -24,13 +25,9 @@ import xarray as xr
 import cmweather
 
 warnings.filterwarnings("ignore")
-try:
-    get_ipython().run_line_magic("matplotlib inline")
-except:
-    plt.ion()
 ```
 
-## Read polar and cartesian data
+## Import polar and cartesian data
 
 ```{code-cell} python
 filename1 = wradlib_data.DATASETS.fetch("geo/bonn_new.tif")
@@ -39,9 +36,9 @@ dem = xr.open_dataset(filename1, engine="rasterio")
 filename2 = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
 swp = xr.open_dataset(filename2, engine="gamic", group="sweep_0")
 ```
-## Prepare polar data set
+## Preprocess polar data
 
-In order to be on the same coordinates, we georeference our radar sweep accordingly.
+In order to be on the same coordinates, we georeference the radar sweep coordinates accordingly.
 
 ```{code-cell} python
 swp = swp.wrl.georef.georeference(crs=dem.spatial_ref)
@@ -49,27 +46,28 @@ swp = swp.set_coords("sweep_mode")
 swp = swp.isel(range=slice(0, 100))
 display(swp)
 ```
-## Prepare cartesian data set
+## Preprocess cartesian data
 
-Inspect the data set a little
+First, inspect the data set a little.
 
 ```{code-cell} python
 display(dem)
 ```
 
-Extract dem band and crop grid. We do this here to prevent memory issues when running this on CI. When applying this to your workflows, just use your normal grid resolution.
+Extract dem band and crop grid.
 
 ```{code-cell} python
-order = 1
 band = (
     dem
-    .wrl.util.crop(swp, pad=order)
+    .wrl.util.crop(swp, pad=0)
     .isel(band=0)["band_data"]
 )
 display(band)
 ```
 
-## Nearest neighbour
+## Nearest neighbour interpolation
+
+Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree. 
 
 ```{code-cell} python
 band_xy = band.chunk()
