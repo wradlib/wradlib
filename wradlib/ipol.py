@@ -434,7 +434,7 @@ def create_kdtree_dataset(
         kwargs, ["k", "eps", "p", "distance_upper_bound", "workers"]
     )
     query_kwargs.setdefault("k", 1)
-    query_kwargs.setdefault("workers", -11)
+    query_kwargs.setdefault("workers", -1)
 
     # src coordinate prep
     src_x = src.coords[src_coords[0]]
