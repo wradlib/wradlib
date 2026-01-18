@@ -139,10 +139,10 @@ def test_nearest_xarray(gamic_swp, dem):
     # extract band, coarsen to prevent memory explosion
     order = 1
     band = (
-        dem.coarsen(x=10, y=10, boundary="trim")
+        dem.wrl.util.crop(swp, pad=order)
+        .coarsen(x=1, y=1, boundary="trim")
         .mean()["band_data"]
         .isel(band=0)
-        .wrl.util.crop(swp, pad=order)
     )
     trg = band.copy()
 
@@ -159,8 +159,7 @@ def test_nearest_xarray(gamic_swp, dem):
     print(f"Interpolation call: {end - start:.3f} seconds")
 
     start = time.time()
-    kwargs = dict(method="nearest")
-    ds = swp.wrl.ipol.polar_to_cart(trg, **kwargs)
+    ds = swp.wrl.ipol.polar_to_cart(trg, method="nearest")
     end = time.time()
     print(f"Nearest Full: {end - start:.3f} seconds")
 
@@ -170,8 +169,7 @@ def test_nearest_xarray(gamic_swp, dem):
     print(f"Interpolation compute: {end - start:.3f} seconds")
 
     start = time.time()
-    kwargs = dict(method="nearest")
-    ds = swp.chunk().wrl.ipol.polar_to_cart(out, **kwargs)
+    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="nearest")
     end = time.time()
     print(f"Nearest Full2: {end - start:.3f} seconds")
 
@@ -230,7 +228,7 @@ def test_idw_xarray(gamic_swp, dem):
     print(f"Index Creation: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="inverse_distance")
+    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="inverse_distance", idw_p=2)
     end = time.time()
     print(f"Interpolation call: {end - start:.3f} seconds")
 
@@ -240,7 +238,7 @@ def test_idw_xarray(gamic_swp, dem):
     print(f"Interpolation compute: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="inverse_distance")
+    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="inverse_distance", idw_p=2)
     end = time.time()
     print(f"Interpolation call2: {end - start:.3f} seconds")
 

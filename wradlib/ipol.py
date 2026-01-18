@@ -464,15 +464,20 @@ def create_kdtree_dataset(
     )
 
     out = out.unstack("npoints2")
-    out.attrs = dict(source="wradlib", model="kdtree", tree_kwargs=tree_kwargs)
+    out.attrs = dict(
+        source="wradlib",
+        model="kdtree",
+        tree_kwargs=tree_kwargs,
+        query_kwargs=query_kwargs,
+    )
 
     return out
 
 
 def _call_inverse_distance_weighting(
-    vals, ix, dists, p=2.0, remove_missing=False, maxdist=None, **kwargs
+    vals, ix, dists, idw_p=2.0, remove_missing=False, maxdist=None, **kwargs
 ):
-    weights = 1.0 / dists**p
+    weights = 1.0 / dists**idw_p
 
     # if maxdist isn't given, take the maximum distance
     if maxdist is not None:
@@ -609,7 +614,7 @@ class Idw(IpolBase):
             vals,
             self.ix,
             self.dists,
-            p=self.p,
+            idw_p=self.p,
             remove_missing=self.remove_missing,
             maxdist=maxdist,
         )
@@ -2143,7 +2148,7 @@ def _map_coordinates_xarray(src, trg, **kwargs):
 
 
 def _polar_to_cart(src, trg, **kwargs):
-    if ~(
+    if not (
         trg.attrs.get("source", None) == "wradlib"
         and trg.attrs.get("model", None) == "kdtree"
     ):
