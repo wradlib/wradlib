@@ -1463,7 +1463,10 @@ def core_dims(obj):
 
 
 def get_apply_ufunc_variables(obj, dim):
-    dims = {dim, "range"}
+    if isinstance(dim, str):
+        dims = {dim, "range"}
+    else:
+        dims = set(dim)
     keep = xr.Dataset(
         {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
     )

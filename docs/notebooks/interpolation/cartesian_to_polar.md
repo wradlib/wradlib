@@ -72,9 +72,9 @@ This is slow for large input arrays. Please check with {func}`scipy.interpolate.
 ```{code-cell} python
 band_xy = band.chunk()
 swp = swp.isel(range=slice(0,100))
-band_polar_nearest = band_xy.wrl.ipol.griddata(swp, method="nearest")
-band_polar_linear = band_xy.wrl.ipol.griddata(swp, method="linear")
-band_polar_cubic = band_xy.wrl.ipol.griddata(swp, method="cubic")
+band_polar_nearest = band_xy.wrl.ipol.interpolate(swp, method="griddata_nearest")
+band_polar_linear = band_xy.wrl.ipol.interpolate(swp, method="griddata_linear")
+band_polar_cubic = band_xy.wrl.ipol.interpolate(swp, method="griddata_cubic")
 ```
 
 ```{code-cell} python
@@ -106,12 +106,12 @@ Please check with {func}`scipy.ndimage.map_coordinates` for kwarg distribution.
 ```{code-cell} python
 band_xy = band.chunk()
 swp = swp.isel(range=slice(0,100))
-band_polar_nearest = band_xy.wrl.ipol.map_coordinates(swp, order=0)
-band_polar_linear = band_xy.wrl.ipol.map_coordinates(swp, order=1)
-band_polar_quadratic = band_xy.wrl.ipol.map_coordinates(swp, order=2)
-band_polar_cubic = band_xy.wrl.ipol.map_coordinates(swp, order=3)
-band_polar_quartic = band_xy.wrl.ipol.map_coordinates(swp, order=4)
-band_polar_quintic = band_xy.wrl.ipol.map_coordinates(swp, order=5)
+band_polar_nearest = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=0)
+band_polar_linear = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=1)
+band_polar_quadratic = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=2)
+band_polar_cubic = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=3)
+band_polar_quartic = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=4)
+band_polar_quintic = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates", order=5)
 ```
 
 ```{code-cell} python

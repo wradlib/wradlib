@@ -13,7 +13,7 @@ kernelspec:
 
 # Interpolate data from polar to cartesian coordinates
 
-The {{wradlib}} {mod}`wradlib.ipol` module implements several interpolator schemes, many of them based on {class}`scipy:scipy.spatial.cKDTree` class. In this notebook its shown how they are applied to {class}`xarray:xarray.Dataset` or {class}`xarray:xarray.DataArray`. 
+The {{wradlib}} {mod}`wradlib.ipol` module implements several interpolator schemes, many of them based on {class}`scipy:scipy.spatial.cKDTree` class. In this notebook its shown how they are applied to {class}`xarray:xarray.Dataset` or {class}`xarray:xarray.DataArray`.
 
 ```{code-cell} python
 import numpy as np
@@ -67,11 +67,11 @@ display(band)
 
 ## Nearest neighbour interpolation
 
-Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree. 
+Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree.
 
 ```{code-cell} python
 band_xy = band.chunk()
-nearest = swp.wrl.ipol.polar_to_cart(band_xy, method="nearest")
+nearest = swp.wrl.ipol.interpolate(band_xy, method="nearest")
 display(nearest)
 ```
 
@@ -93,7 +93,7 @@ plt.tight_layout()
 
 ```{code-cell} python
 band_xy = band.chunk()
-inverse_distance = swp.wrl.ipol.polar_to_cart(band_xy, method="inverse_distance", k=4, idw_p=2)
+inverse_distance = swp.wrl.ipol.interpolate(band_xy, method="inverse_distance", k=4, idw_p=2)
 display(inverse_distance)
 ```
 
@@ -118,14 +118,14 @@ In the above examples the KDTree is computed and queried within the function. If
 
 ```{code-cell} python
 band_xy = band.chunk()
-kdtree = swp.wrl.ipol.create_kdtree_dataset(band_xy, k=4)
-display(kdtree)
+mapping = swp.wrl.ipol.get_mapping(band_xy, k=4)
+display(mapping)
 ```
 
 ```{code-cell} python
 band_xy = band.chunk()
-nearest = swp.wrl.ipol.polar_to_cart(kdtree, method="nearest")
-inverse_distance = swp.wrl.ipol.polar_to_cart(kdtree, method="inverse_distance", idw_p=2)
+nearest = swp.wrl.ipol.interpolate(mapping, method="nearest")
+inverse_distance = swp.wrl.ipol.interpolate(mapping, method="inverse_distance", idw_p=2)
 ```
 
 ```{code-cell} python

@@ -149,17 +149,17 @@ def test_nearest_xarray(gamic_swp, dem):
     import time
 
     start = time.time()
-    out = ipol.create_kdtree_dataset(swp, trg, k=1)
+    out = ipol.get_mapping(swp, trg, k=1)
     end = time.time()
     print(f"Index Creation: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="nearest")
+    ds = ipol.interpolate(swp.chunk(), out, method="nearest")
     end = time.time()
     print(f"Interpolation call: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = swp.wrl.ipol.polar_to_cart(trg, method="nearest")
+    ds = swp.wrl.ipol.interpolate(trg, method="nearest")
     end = time.time()
     print(f"Nearest Full: {end - start:.3f} seconds")
 
@@ -169,7 +169,7 @@ def test_nearest_xarray(gamic_swp, dem):
     print(f"Interpolation compute: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="nearest")
+    ds = swp.chunk().wrl.ipol.interpolate(out, method="nearest")
     end = time.time()
     print(f"Nearest Full2: {end - start:.3f} seconds")
 
@@ -223,12 +223,12 @@ def test_idw_xarray(gamic_swp, dem):
     import time
 
     start = time.time()
-    out = ipol.create_kdtree_dataset(swp, trg, k=4)
+    out = ipol.get_mapping(swp, trg, k=4)
     end = time.time()
     print(f"Index Creation: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = ipol.interpolate_from_ix(swp.chunk(), out, method="inverse_distance", idw_p=2)
+    ds = ipol.interpolate(swp.chunk(), out, method="inverse_distance", idw_p=2)
     end = time.time()
     print(f"Interpolation call: {end - start:.3f} seconds")
 
@@ -238,7 +238,7 @@ def test_idw_xarray(gamic_swp, dem):
     print(f"Interpolation compute: {end - start:.3f} seconds")
 
     start = time.time()
-    ds = swp.chunk().wrl.ipol.polar_to_cart(out, method="inverse_distance", idw_p=2)
+    ds = swp.chunk().wrl.ipol.interpolate(out, method="inverse_distance", idw_p=2)
     end = time.time()
     print(f"Interpolation call2: {end - start:.3f} seconds")
 
@@ -247,13 +247,13 @@ def test_idw_xarray(gamic_swp, dem):
     end = time.time()
     print(f"Interpolation compute2: {end - start:.3f} seconds")
 
-    import matplotlib.pyplot as plt
+    assert isinstance(ds, xr.Dataset)
 
-    plt.figure()
-    swp.isel(time2=0, missing_dims="ignore").DBZH.wrl.vis.plot()
-    plt.figure()
-    ds.DBZH.plot()
-    plt.show()
+    # plt.figure()
+    # swp.isel(time2=0, missing_dims="ignore").DBZH.wrl.vis.plot()
+    # plt.figure()
+    # ds.DBZH.plot()
+    # plt.show()
 
 
 def test_Idw_1(ipol_data):
@@ -686,7 +686,7 @@ def test_map_coordinates_numpy_vs_xarray(gamic_swp, dem):
 
     # xarray
     dem_xr = band.chunk()
-    out_xr = dem_xr.wrl.ipol.map_coordinates(swp, order=order)
+    out_xr = dem_xr.wrl.ipol.interpolate(swp, method="map_coordinates", order=order)
 
     # numpy
     dem_values = band.data
@@ -722,7 +722,7 @@ def test_griddata_numpy_vs_xarray(gamic_swp, dem):
 
     # xarray
     dem_xr = band.chunk()
-    out_xr = dem_xr.wrl.ipol.griddata(swp.chunk(), method="linear")
+    out_xr = dem_xr.wrl.ipol.interpolate(swp.chunk(), method="griddata_linear")
 
     # numpy
     dem_values = band.copy().data
