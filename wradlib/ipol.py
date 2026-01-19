@@ -1875,17 +1875,17 @@ def _interpolate_xarray(src, trg, **kwargs):
     Examples
     --------
     >>> # KDTree nearest neighbor interpolation
-    >>> out = src.wrl.ipol.interpolate(target, method='nearest')
+    >>> out = src.wrl.ipol.interpolate(target, method='nearest') #doctest: +SKIP
 
     >>> # KDTree inverse distance weighting
-    >>> out = src.wrl.ipol.interpolate(target, method='inverse_distance')
+    >>> out = src.wrl.ipol.interpolate(target, method='inverse_distance') #doctest: +SKIP
 
     >>> # SciPy griddata with cubic interpolation
-    >>> out = src.wrl.ipol.interpolate(target, method='griddata_cubic', backend_kwargs={'fill_value': np.nan})
+    >>> out = src.wrl.ipol.interpolate(target, method='griddata_cubic', backend_kwargs={'fill_value': np.nan}) #doctest: +SKIP
 
     >>> # SciPy map_coordinates with quintic spline interpolation
-    >>> out = src.wrl.ipol.interpolate(target, method='map_coordinates_quintic')"""
-
+    >>> out = src.wrl.ipol.interpolate(target, method='map_coordinates_quintic') #doctest: +SKIP
+    """
     BACKENDS = [
         "nearest",
         "inverse_distance",
