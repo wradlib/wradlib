@@ -13,10 +13,10 @@ kernelspec:
 
 # Interpolation with wradlib
 
-
 This section provides a collection of example code snippets to make users familiar with $\omega radlib$'s interpolation capabilities.
 
-## Examples List
+From version 2.7.0 {{wradlib}} has unified the interpolation API facilitating the single API entrypoint {meth}`wradlib.ipol.IpolMethods.interpolate`.
+
 ```{toctree}
 :hidden:
 :maxdepth: 2

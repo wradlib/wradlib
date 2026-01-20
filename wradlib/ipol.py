@@ -1702,7 +1702,10 @@ class ExternalDriftKriging(IpolBase):
 @singledispatch
 def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     """
-    Convenience function to use the interpolation classes in an efficient way
+    Convenience function to use the interpolation classes in an efficient way.
+
+    This docstring explains the pure numpy function. For xarray-based usage see
+    :meth:`wradlib.ipol.IpolMethods.interpolate`.
 
     The interpolation classes in :mod:`wradlib.ipol` are computationally very
     efficient if they are applied on large multidimensional arrays of which

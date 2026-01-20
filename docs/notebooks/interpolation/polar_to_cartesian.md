@@ -67,6 +67,7 @@ display(band)
 
 ## Nearest neighbour interpolation
 
+For details see {{wradlib}}'s central interpolation API entrypoint {meth}`wradlib.ipol.IpolMethods.interpolate`.
 Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree.
 
 ```{code-cell} python
@@ -90,6 +91,9 @@ plt.tight_layout()
 ```
 
 ## Inverse distance
+
+For details see {{wradlib}}'s central interpolation API entrypoint {meth}`wradlib.ipol.IpolMethods.interpolate`.
+Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree.
 
 ```{code-cell} python
 band_xy = band.chunk()
@@ -115,6 +119,8 @@ plt.tight_layout()
 ## Precompute KDTree dataset
 
 In the above examples the KDTree is computed and queried within the function. If your geometry is fixed you can precompute the KDTree and use it in subsequent computations.
+Please check with {class}`scipy:scipy.spatial.cKDTree` for kwargs for tree initialization and {meth}`scipy:scipy.spatial.cKDTree.query` for kwargs for querying the tree.
+
 
 ```{code-cell} python
 band_xy = band.chunk()

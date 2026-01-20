@@ -67,11 +67,12 @@ display(swp)
 
 ## griddata
 
+For details see {{wradlib}}'s central interpolation API entrypoint {meth}`wradlib.ipol.IpolMethods.interpolate`.
 This is slow for large input arrays. Please check with {func}`scipy.interpolate.griddata` for kwarg distribution.
 
 ```{code-cell} python
 band_xy = band.chunk()
-swp = swp.isel(range=slice(0,100))
+swp = swp.isel(range=slice(0, 100))
 band_polar_nearest = band_xy.wrl.ipol.interpolate(swp, method="griddata_nearest")
 band_polar_linear = band_xy.wrl.ipol.interpolate(swp, method="griddata_linear")
 band_polar_cubic = band_xy.wrl.ipol.interpolate(swp, method="griddata_cubic")
@@ -80,20 +81,18 @@ band_polar_cubic = band_xy.wrl.ipol.interpolate(swp, method="griddata_cubic")
 ```{code-cell} python
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 10))
 cmap = "terrain"
-vmin = 0.0
+vmin, vmax = 0.0, 250.0
 
 band_crop = band_xy.wrl.util.crop(swp)
-pm = band_crop.plot(ax=ax1, add_colorbar=False, cmap=cmap, vmin=vmin)
+pm = band_crop.plot(ax=ax1, cmap=cmap, vmin=vmin, vmax=vmax)
 ax1.set_aspect(band_crop.wrl.util.aspect())
-# add colorbar manually
-fig.colorbar(pm, ax=ax1, shrink=0.66)
 ax1.set_title("Original DEM")
 
-pm = band_polar_nearest.wrl.vis.plot(ax=ax2, cmap=cmap, vmin=vmin)
+pm = band_polar_nearest.wrl.vis.plot(ax=ax2, cmap=cmap, vmin=vmin, vmax=vmax)
 ax2.set_title("Nearest")
-pm = band_polar_linear.wrl.vis.plot(ax=ax3, cmap=cmap, vmin=vmin)
+pm = band_polar_linear.wrl.vis.plot(ax=ax3, cmap=cmap, vmin=vmin, vmax=vmax)
 ax3.set_title("Linear")
-pm = band_polar_cubic.wrl.vis.plot(ax=ax4, cmap=cmap, vmin=vmin)
+pm = band_polar_cubic.wrl.vis.plot(ax=ax4, cmap=cmap, vmin=vmin, vmax=vmax)
 ax4.set_title("Cubic")
 
 plt.tight_layout()
@@ -101,6 +100,7 @@ plt.tight_layout()
 
 ## map_coordinates
 
+For details see {{wradlib}}'s central interpolation API entrypoint {meth}`wradlib.ipol.IpolMethods.interpolate`.
 Please check with {func}`scipy.ndimage.map_coordinates` for kwarg distribution.
 
 ```{code-cell} python
@@ -117,18 +117,17 @@ band_polar_quintic = band_xy.wrl.ipol.interpolate(swp, method="map_coordinates",
 ```{code-cell} python
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(12, 15))
 
-
-pm = band_polar_nearest.wrl.vis.plot(ax=ax1, cmap=cmap, vmin=vmin)
+pm = band_polar_nearest.wrl.vis.plot(ax=ax1, cmap=cmap, vmin=vmin, vmax=vmax)
 ax1.set_title("Nearest")
-pm = band_polar_linear.wrl.vis.plot(ax=ax2, cmap=cmap, vmin=vmin)
+pm = band_polar_linear.wrl.vis.plot(ax=ax2, cmap=cmap, vmin=vmin, vmax=vmax)
 ax2.set_title("Linear")
-pm = band_polar_quadratic.wrl.vis.plot(ax=ax3, cmap=cmap, vmin=vmin)
+pm = band_polar_quadratic.wrl.vis.plot(ax=ax3, cmap=cmap, vmin=vmin, vmax=vmax)
 ax3.set_title("Quadratic")
-pm = band_polar_cubic.wrl.vis.plot(ax=ax4, cmap=cmap, vmin=vmin)
+pm = band_polar_cubic.wrl.vis.plot(ax=ax4, cmap=cmap, vmin=vmin, vmax=vmax)
 ax4.set_title("Cubic")
-pm = band_polar_quartic.wrl.vis.plot(ax=ax5, cmap=cmap, vmin=vmin)
+pm = band_polar_quartic.wrl.vis.plot(ax=ax5, cmap=cmap, vmin=vmin, vmax=vmax)
 ax5.set_title("Quartic")
-pm = band_polar_quintic.wrl.vis.plot(ax=ax6, cmap=cmap, vmin=vmin)
+pm = band_polar_quintic.wrl.vis.plot(ax=ax6, cmap=cmap, vmin=vmin, vmax=vmax)
 ax6.set_title("Quintic")
 
 plt.tight_layout()

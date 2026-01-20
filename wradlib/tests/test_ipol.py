@@ -179,12 +179,6 @@ def test_nearest_xarray(gamic_swp, dem):
     print(f"Interpolation compute2: {end - start:.3f} seconds")
 
     assert isinstance(ds, xr.Dataset)
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # swp.isel(time2=0).DBZH.wrl.vis.plot()
-    # plt.figure()
-    # ds.DBZH.plot()
-    # plt.show()
 
 
 def test_Nearest_1(ipol_data):
@@ -248,12 +242,6 @@ def test_idw_xarray(gamic_swp, dem):
     print(f"Interpolation compute2: {end - start:.3f} seconds")
 
     assert isinstance(ds, xr.Dataset)
-
-    # plt.figure()
-    # swp.isel(time2=0, missing_dims="ignore").DBZH.wrl.vis.plot()
-    # plt.figure()
-    # ds.DBZH.plot()
-    # plt.show()
 
 
 def test_Idw_1(ipol_data):
