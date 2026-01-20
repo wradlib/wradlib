@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2021-2023, wradlib developers.
+# Copyright (c) 2021-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -16,6 +16,7 @@ Former available backends have been ported to `xradar <https://xradar.rtfd.io>`_
 
    {}
 """
+
 __all__ = [
     "RadolanBackendEntrypoint",
 ]

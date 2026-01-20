@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -41,6 +41,7 @@ Calling the objects with actual data, however, will be very fast.
 
    {}
 """
+
 __all__ = [
     "ZonalDataBase",
     "ZonalDataPoint",

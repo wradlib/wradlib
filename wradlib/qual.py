@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -25,6 +25,7 @@ fields except that they exhibit the numpy ndarray interface.
 
    {}
 """
+
 __all__ = [
     "pulse_volume",
     "beam_block_frac",

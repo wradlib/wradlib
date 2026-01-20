@@ -22,6 +22,7 @@ This includes for example:
 
    {}
 """
+
 __all__ = [
     "IpolBase",
     "Nearest",
@@ -1116,7 +1117,7 @@ class OrdinaryKriging(IpolBase):
         """Sets up the kriging system and solves it in order to obtain the
         interpolation weights of ordinary kriging.
         Also calculates the kriging estimation variance from the results"""
-        for dist, ix in zip(self.dists, self.ix):
+        for dist, ix in zip(self.dists, self.ix, strict=True):
             matrix = self._krig_matrix(self.src[ix, :])
             rhs = self._krig_rhs(dist)
             weights = np.linalg.solve(matrix, rhs)
@@ -1315,7 +1316,7 @@ class ExternalDriftKriging(IpolBase):
         Also calculates the kriging estimation variance from the results"""
         all_weights = []
         estimation_variances = []
-        for dist, ix, td in zip(self.dists, self.ix, trg_drift):
+        for dist, ix, td in zip(self.dists, self.ix, trg_drift, strict=True):
             matrix = self._krig_matrix(self.src[ix, :], src_drift[ix])
             rhs = self._krig_rhs(dist, td)
             try:

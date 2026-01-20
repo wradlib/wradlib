@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,6 +13,7 @@ Attenuation Correction
 
     {}
 """
+
 __all__ = [
     "AttenuationOverflowError",
     "correct_attenuation_hb",
@@ -527,7 +528,9 @@ def correct_attenuation_constrained(
             b_used[beams2correct] = b
             # Indexing threshold exceeding beams
             incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool_)
-            for constraint, constraint_arg in zip(constraints, constraint_args):
+            for constraint, constraint_arg in zip(
+                constraints, constraint_args, strict=True
+            ):
                 incorrectbeams = np.logical_or(
                     incorrectbeams, constraint(tmp_gateset, pia, *constraint_arg)
                 )

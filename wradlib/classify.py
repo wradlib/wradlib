@@ -12,6 +12,7 @@ Clutter Identification and Hydrometeor Classification (HMC)
 
     {}
 """
+
 __all__ = [
     "filter_gabella",
     "filter_gabella_a",
@@ -474,7 +475,7 @@ def histo_cut(obj, *, upper_frequency=0.01, lower_frequency=0.01):
         prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan, prec_accum)
 
         # generate a histogram of the valid bins with 50 classes
-        (n, bins) = np.histogram(
+        n, bins = np.histogram(
             prec_accum_masked[np.isfinite(prec_accum_masked)].ravel(), bins=50
         )
         # get the class with biggest occurence
@@ -864,7 +865,7 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     """
 
     def _classify_echo_fuzzy_wrapper(*args, mom=None, **kwargs):
-        dat = {name: value for name, value in zip(mom, args)}
+        dat = {name: value for name, value in zip(mom, args, strict=True)}
         return classify_echo_fuzzy(dat, **kwargs)
 
     # all moments that are not derived automatically

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -37,6 +37,7 @@ CAPPIS (:class:`~wradlib.vpr.CAPPI`) and Pseudo CAPPIs
 
    {}
 """
+
 __all__ = [
     "volcoords_from_polar",
     "make_3d_grid",

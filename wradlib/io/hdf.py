@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,6 +13,7 @@ Former available xarray based code has been ported to `xradar <https://xradar.rt
 
    {}
 """
+
 __all__ = [
     "open_gpm_dataset",
     "read_generic_hdf5",
@@ -509,6 +510,7 @@ def read_gpm(filename, *, bbox=None):
         minute,
         second,
         millisecond.astype(np.int32) * 1000,
+        strict=True,
     )
     pr_time = np.array(
         [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]
@@ -636,6 +638,7 @@ def _get_gpm_time_group(filename, group):
         ds.Minute.values,
         ds.Second.values,
         ds.MilliSecond.values,
+        strict=True,
     )
     pr_time = np.array(
         [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]
@@ -747,6 +750,7 @@ def read_trmm(filename1, filename2, *, bbox=None):
         minute,
         second,
         millisecond.astype(np.int32) * 1000,
+        strict=True,
     )
     pr_time = np.array(
         [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]

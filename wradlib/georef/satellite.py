@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,6 +13,7 @@ Satellite Functions
 
    {}
 """
+
 __all__ = ["correct_parallax", "dist_from_orbit", "GeorefSatelliteMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

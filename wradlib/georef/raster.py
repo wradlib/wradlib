@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,6 +13,7 @@ Raster Functions
 
    {}
 """
+
 __all__ = [
     "read_gdal_values",
     "read_gdal_projection",
@@ -535,7 +536,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
         extent = georef.reproject(extent, src_crs=src_crs, trg_crs=trg_crs)
 
-    (ulx, uly, urx, ury, llx, lly, lrx, lry) = tuple(list(extent.flatten().tolist()))
+    ulx, uly, urx, ury, llx, lly, lrx, lry = tuple(list(extent.flatten().tolist()))
 
     # align grid to destination raster or UL-corner point
     if align:

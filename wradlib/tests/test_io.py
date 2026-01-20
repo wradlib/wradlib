@@ -1559,7 +1559,7 @@ def test_get_srtm_tile_names():
     e2 = [-28.5, -28.2, 38.2, 38.5]
     e3 = [15.3, 16.6, -1.4, 0.4]
     extent = [e0, e1, e2, e3]
-    for t, e in zip(targets, extent):
+    for t, e in zip(targets, extent, strict=True):
         filelist = io.dem.get_srtm_tile_names(e)
         assert t == filelist
 
