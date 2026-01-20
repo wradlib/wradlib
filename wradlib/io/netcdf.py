@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,6 +13,7 @@ Former available xarray based code has been ported to `xradar <https://xradar.rt
 
    {}
 """
+
 __all__ = [
     "read_edge_netcdf",
     "read_generic_netcdf",

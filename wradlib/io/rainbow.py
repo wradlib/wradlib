@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -18,6 +18,7 @@ Reading sweep data can be skipped by setting `loaddata=False`.
 
    {}
 """
+
 __all__ = ["read_rainbow"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

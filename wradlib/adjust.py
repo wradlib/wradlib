@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -100,6 +100,7 @@ validation results::
 
    {}
 """
+
 __all__ = [
     "AdjustBase",
     "AdjustMFB",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 # flake8: noqa
 """
@@ -25,6 +25,7 @@ Georeferencing
 .. automodule:: wradlib.georef.vector
 .. automodule:: wradlib.georef.xarray
 """
+
 __doc__ = __doc__.format("\n   ".join(["GeorefMethods"]))
 
 from .misc import *

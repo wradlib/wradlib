@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -20,6 +20,7 @@ datetime from the filename. Use on your own risk.
 
    {}
 """
+
 __all__ = [
     "open_radolan_dataset",
     "open_radolan_mfdataset",
@@ -159,7 +160,7 @@ def unpack_dx(raw):
     beam.extend(raw[0 : flagged[0]])
 
     # iterate over all flags except the last one
-    for this, nxt in zip(flagged[:-1], flagged[1:]):
+    for this, nxt in zip(flagged[:-1], flagged[1:], strict=True):
         # create as many zeros as there are given within the flagged
         # byte's data part
         beam.extend([0] * (raw[this] & data))

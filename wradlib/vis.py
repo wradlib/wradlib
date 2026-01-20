@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -14,6 +14,7 @@ Standard plotting and mapping procedures.
 
    {}
 """
+
 __all__ = [
     "plot",
     "plot_ppi_crosshair",

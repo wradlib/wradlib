@@ -1,5 +1,5 @@
 # !/usr/bin/env python
-# Copyright (c) 2011-2025, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 from dataclasses import dataclass
 
@@ -770,11 +770,11 @@ def gdal_data():
         filename1 = "geo/bonn_new.tif"
         geofile1 = get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
-        (data, coords, crs) = georef.extract_raster_dataset(ds)
+        data, coords, crs = georef.extract_raster_dataset(ds)
         filename2 = "hdf5/belgium.comp.hdf"
         geofile2 = get_wradlib_data_file(filename2)
         ds2 = wradlib.io.open_raster(geofile2)
-        (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
+        data2, coords2, proj2 = georef.extract_raster_dataset(ds2, mode="edge")
 
         corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
 
@@ -1442,6 +1442,7 @@ def test_get_vector_coordinates(vec_data):
     x, attrs = georef.get_vector_coordinates(layer, key="FID", src_crs=vec_data.crs)
     assert attrs == list(range(13))
 
+    layer.ResetReading()
     x, attrs = georef.get_vector_coordinates(layer, src_crs=vec_data.crs)
     y = []
     layer.ResetReading()
@@ -1451,8 +1452,8 @@ def test_get_vector_coordinates(vec_data):
             geom = feature.GetGeometryRef()
             y.append(georef.ogr_to_numpy(geom))
     y = np.array(y, dtype=object)
-    for x1, y1 in zip(x, y):
-        np.testing.assert_allclose(x1, y1)
+    for x1, y1 in zip(x, y, strict=True):
+        np.testing.assert_allclose(x1.astype("float64"), y1.astype("float64"))
 
     layer.ResetReading()
     x, attrs = georef.get_vector_coordinates(

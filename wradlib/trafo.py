@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -18,6 +18,7 @@ to dBZ-values to Z-values and vice versa.
 
    {}
 """
+
 __all__ = [
     "rvp_to_dbz",
     "decibel",
