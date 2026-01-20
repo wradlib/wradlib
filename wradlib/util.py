@@ -18,6 +18,7 @@ attributable to the other modules
 """
 
 __all__ = [
+    "aspect",
     "from_to",
     "filter_window_polar",
     "filter_window_cartesian",
@@ -1484,6 +1485,41 @@ def crop(src, trg, pad=0):
     return src.sel(x=slice_vals(src.x, trg.x, pad), y=slice_vals(src.y, trg.y, pad))
 
 
+def aspect(obj):
+    """
+    Compute an aspect ratio that equalizes physical axis lengths.
+
+    The returned value can be passed to plotting functions (e.g. xarray or
+    matplotlib) to scale the x and y axes such that one unit in x has the
+    same physical length as one unit in y, independent of the array shape
+    or data resolution.
+
+    Parameters
+    ----------
+    obj : xarray.DataArray or xarray.Dataset
+        Object with ``x`` and ``y`` coordinates defining the spatial extent.
+
+    Returns
+    -------
+    float
+        Aspect ratio defined as ``(x_max - x_min) / (y_max - y_min)``.
+
+    Notes
+    -----
+    This function uses coordinate ranges rather than array dimensions.
+    It is therefore suitable for plots where the axes should reflect
+    physical distances (e.g., meters, degrees) rather than pixel counts.
+
+    Examples
+    --------
+    >>> ax = plt.gca() #doctest: +SKIP
+    >>> da.plot(ax=ax, aspect=aspect(da)) #doctest: +SKIP
+    """
+    return (float(obj.x.max()) - float(obj.x.min())) / (
+        float(obj.y.max()) - float(obj.y.min())
+    )
+
+
 class XarrayMethods:
     """BaseClass to bind xarray methods to wradlib SubAccessor
 
@@ -1565,6 +1601,13 @@ class UtilMethods(XarrayMethods):
             return crop(self, *args, **kwargs)
         else:
             return crop(self._obj, *args, **kwargs)
+
+    @docstring(aspect)
+    def aspect(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return aspect(self, *args, **kwargs)
+        else:
+            return aspect(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
