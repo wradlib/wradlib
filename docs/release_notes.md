@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version (unreleased)
+
+**Maintenance**
+
+* update pre-commit and lint ({pull}`741`) by {at}`kmuehlbauer`
+
 ## Version 2.6.1
 
 **New features**
