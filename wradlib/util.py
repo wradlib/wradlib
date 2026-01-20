@@ -18,12 +18,15 @@ attributable to the other modules
 """
 
 __all__ = [
+    "aspect",
     "from_to",
     "filter_window_polar",
     "filter_window_cartesian",
     "find_bbox_indices",
     "get_raster_origin",
     "calculate_polynomial",
+    "core_dims",
+    "crop",
     "derivate",
     "despeckle",
     "import_optional",
@@ -1398,20 +1401,72 @@ def docstring(func):
 
 
 def dim0(obj):
-    """Return major dimension (azimuth/elevation) of xarray object."""
-    if dim0 := set(obj.dims) & {"azimuth", "elevation"}:
-        return dim0.pop()
-    elif "time" in obj.dims:
-        return "time"
+    """Return major dimension (azimuth/elevation) of xarray object for FM301 or None."""
+    if "range" in obj.dims:
+        if dim0 := set(obj.dims) & {"azimuth", "elevation"}:
+            return dim0.pop()
+        elif "time" in obj.dims:
+            return "time"
+        else:
+            raise ValueError(
+                f"No CfRadial2/FM301 compliant dimension found in {obj.dims!r}. "
+                "Expected one of 'azimuth', 'elevation' or 'time'."
+            )
+    return None
+
+
+def core_dims(obj):
+    """
+    Determine core dimensions for use with ``xarray.apply_ufunc``.
+
+    This helper inspects the object for a wradlib-style primary dimension
+    (e.g. ``"azimuth"``). If such a dimension exists, it is combined with
+    the ``"range"`` dimension to define the input and output core
+    dimensions. If no primary dimension is found, scalar core dimensions
+    are used.
+
+    Parameters
+    ----------
+    obj : xarray.DataArray
+        Input object whose dimensions are inspected.
+
+    Returns
+    -------
+    input_core_dims : list or None
+        Core dimensions for the input to ``xarray.apply_ufunc``.
+        Returns ``None`` if no primary dimension is detected.
+    output_core_dims : list of tuple
+        Core dimensions for the output of ``xarray.apply_ufunc``.
+
+    Notes
+    -----
+    This function is primarily intended for wradlib processing pipelines
+    where data may be organized either as 2D polar grids
+    (e.g. ``(azimuth, range)``) or as scalar values without a leading
+    angular dimension.
+
+    Examples
+    --------
+    >>> in_dims, out_dims = core_dims(da) #doctest: +SKIP
+    >>> xr.apply_ufunc(func, da,
+    ...                input_core_dims=in_dims,
+    ...                output_core_dims=out_dims) #doctest: +SKIP
+    """
+    dim0 = obj.wrl.util.dim0()
+    if dim0 is None:
+        input_core_dims = None
+        output_core_dims = ((),)
     else:
-        raise ValueError(
-            f"No CfRadial2/FM301 compliant dimension found in {obj.dims!r}. "
-            "Expected one of 'azimuth', 'elevation' or 'time'."
-        )
+        input_core_dims = [[dim0, "range"]]
+        output_core_dims = [[dim0, "range"]]
+    return input_core_dims, output_core_dims
 
 
 def get_apply_ufunc_variables(obj, dim):
-    dims = {dim, "range"}
+    if isinstance(dim, str):
+        dims = {dim, "range"}
+    else:
+        dims = set(dim)
     keep = xr.Dataset(
         {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
     )
@@ -1426,6 +1481,91 @@ def get_dataarray(obj, arr):
         arr = obj[arr]
     assert isinstance(arr, xr.DataArray)
     return arr
+
+
+def get_keys(kwargs, keys_to_pop):
+    new_dict = {key: kwargs[key] for key in keys_to_pop if key in kwargs}
+    return new_dict
+
+
+def crop(src, trg, pad=0):
+    """
+    Crop a 2D DataArray to the spatial extent of another DataArray,
+    optionally extending the crop by a given number of grid cells.
+
+    The crop bounds are derived from the minimum and maximum values of
+    the target coordinates. Coordinate axes that are sorted in descending
+    order are handled correctly.
+
+    Parameters
+    ----------
+    src : xarray.DataArray
+        Source data with ``x`` and ``y`` coordinates.
+    trg : xarray.DataArray
+        Target data providing the spatial extent via its ``x`` and ``y``
+        coordinates.
+    pad : int, optional
+        Number of additional grid cells to include beyond the target
+        extent in each direction. The padding is applied in coordinate
+        units using the source grid spacing. Default is 0.
+
+    Returns
+    -------
+    xarray.DataArray
+        Cropped view of ``src`` that covers the target domain plus the
+        optional padding.
+
+    Notes
+    -----
+    Padding is applied symmetrically in both directions along each axis.
+    This is particularly useful when preparing data for higher-order
+    interpolation methods (e.g., linear or cubic splines) that require
+    neighboring grid cells near the domain boundaries.
+    """
+
+    def slice_vals(axis, arr, pad):
+        dx = abs(float(axis[1]) - float(axis[0]))
+        start, stop = arr.min().values - pad * dx, arr.max().values + pad * dx
+        if axis[0] > axis[-1]:  # descending axis
+            start, stop = stop, start
+        return slice(start, stop)
+
+    return src.sel(x=slice_vals(src.x, trg.x, pad), y=slice_vals(src.y, trg.y, pad))
+
+
+def aspect(obj):
+    """
+    Compute an aspect ratio that equalizes physical axis lengths.
+
+    The returned value can be passed to plotting functions (e.g. xarray or
+    matplotlib) to scale the x and y axes such that one unit in x has the
+    same physical length as one unit in y, independent of the array shape
+    or data resolution.
+
+    Parameters
+    ----------
+    obj : xarray.DataArray or xarray.Dataset
+        Object with ``x`` and ``y`` coordinates defining the spatial extent.
+
+    Returns
+    -------
+    float
+        Aspect ratio defined as ``(x_max - x_min) / (y_max - y_min)``.
+
+    Notes
+    -----
+    This function uses coordinate ranges rather than array dimensions.
+    It is therefore suitable for plots where the axes should reflect
+    physical distances (e.g., meters, degrees) rather than pixel counts.
+
+    Examples
+    --------
+    >>> ax = plt.gca() #doctest: +SKIP
+    >>> da.plot(ax=ax, aspect=aspect(da)) #doctest: +SKIP
+    """
+    return (float(obj.x.max()) - float(obj.x.min())) / (
+        float(obj.y.max()) - float(obj.y.min())
+    )
 
 
 class XarrayMethods:
@@ -1502,6 +1642,27 @@ class UtilMethods(XarrayMethods):
             return dim0(self, *args, **kwargs)
         else:
             return dim0(self._obj, *args, **kwargs)
+
+    @docstring(core_dims)
+    def core_dims(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return core_dims(self, *args, **kwargs)
+        else:
+            return core_dims(self._obj, *args, **kwargs)
+
+    @docstring(crop)
+    def crop(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return crop(self, *args, **kwargs)
+        else:
+            return crop(self._obj, *args, **kwargs)
+
+    @docstring(aspect)
+    def aspect(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return aspect(self, *args, **kwargs)
+        else:
+            return aspect(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

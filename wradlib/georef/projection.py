@@ -78,6 +78,7 @@ def ensure_crs(crs, trg="pyproj"):
         Coordinate Reference System (CRS) of the coordinates. Must be given and
         can be one of:
 
+        - A :py:class:`xarray:xarray.DataArray` instance containing spatial reference
         - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
@@ -97,7 +98,9 @@ def ensure_crs(crs, trg="pyproj"):
     # first move everything into pyproj.CRS/WKT or return early
     if crs is None:
         return crs
-    if isinstance(crs, pyproj.CRS) and type(crs) is pyproj.CRS:
+    if hasattr(crs, "attrs"):
+        return pyproj.CRS.from_cf(crs.attrs)
+    elif isinstance(crs, pyproj.CRS) and type(crs) is pyproj.CRS:
         if trg == "pyproj":
             return crs
     elif has_import(cartopy) and isinstance(crs, cartopy.crs.CRS):

@@ -94,12 +94,13 @@ def _z_to_r_xarray(obj, **kwargs):
     output : :py:class:`xarray:xarray.DataArray`
         rainfall intensity in mm/h
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
+
     out = xr.apply_ufunc(
         z_to_r,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         kwargs=kwargs,
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -166,12 +167,12 @@ def _r_to_z_xarray(obj, **kwargs):
         reflectivity in mm**6/m**3
 
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     out = xr.apply_ufunc(
         r_to_z,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         kwargs=kwargs,
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -366,25 +367,30 @@ def _z_to_r_enhanced_xarray(obj, **kwargs):
     si : :py:class:`xarray:xarray.DataArray`
         calculated shower index
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     shower = kwargs.setdefault("shower", True)
-    output_core_dims = [[dim0, "range"]]
+    output_core_dims = core_dims[1]
     if shower is True:
         output_core_dims *= 2
     out = xr.apply_ufunc(
         z_to_r_enhanced,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"], [dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=output_core_dims,
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
+    si = None
     if shower is True:
         out, si = out
     out.attrs = sweep_vars_mapping["RATE"]
     out.name = "RATE"
-    return out, si
+
+    if shower is True:
+        return out, si
+    else:
+        return out
 
 
 class ZRMethods(util.XarrayMethods):

@@ -98,11 +98,34 @@ def test_correct_attenuation_hb():
         atten.correct_attenuation_hb(gateset, mode="except")
 
 
+def test_correct_attenuation_hb_xarray(dx_swp):
+    dx_swp.wrl.atten.correct_attenuation_hb(mode="warn")
+    dx_swp.wrl.atten.correct_attenuation_hb(mode="nan")
+    dx_swp.wrl.atten.correct_attenuation_hb(mode="zero")
+    with pytest.raises(atten.AttenuationOverflowError):
+        dx_swp.wrl.atten.correct_attenuation_hb(mode="except")
+
+
 def test_correct_attenuation_constrained():
     filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     filename = get_wradlib_data_file(filestr)
     gateset, attrs = io.read_dx(filename)
     atten.correct_attenuation_constrained(gateset)
+
+
+def test_correct_attenuation_constrained_xarray(dx_swp):
+    dx_swp.wrl.atten.correct_attenuation_constrained()
+
+
+def test_pia_from_kdp():
+    filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
+    filename = get_wradlib_data_file(filestr)
+    gateset, attrs = io.read_dx(filename)
+    atten.pia_from_kdp(gateset, 1)
+
+
+def test_pia_from_kdp_xarray(dx_swp):
+    dx_swp.wrl.atten.pia_from_kdp()
 
 
 def test_correct_radome_attenuation_empirical(att_data):

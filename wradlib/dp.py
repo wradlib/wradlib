@@ -837,7 +837,7 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
         array of depolarization ratios with the same shape as input data,
         numpy broadcasting rules apply
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     zdr = kwargs.pop("zdr", None)
     rho = kwargs.pop("rho", None)
     if zdr is None or rho is None:
@@ -854,8 +854,8 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
         depolarization,
         zdr,
         rho,
-        input_core_dims=[[dim0, "range"], [dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0] * 2,
+        output_core_dims=core_dims[1],
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
