@@ -46,6 +46,7 @@ class AttenuationOverflowError(Exception):
     """
 
 
+@singledispatch
 def correct_attenuation_hb(
     gateset,
     *,
@@ -140,6 +141,22 @@ def correct_attenuation_hb(
                 raise AttenuationOverflowError
 
     return pia
+
+
+@correct_attenuation_hb.register(DataArray)
+def _correct_attenuation_hb_xarray(obj, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        correct_attenuation_hb,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.name = "correct_attenuation_hb"
+    return out
 
 
 def constraint_dbz(gateset, pia, thrs_dbz):
@@ -585,6 +602,7 @@ def _correct_attenuation_constrained_xarray(obj, **kwargs):
     return out
 
 
+@singledispatch
 def correct_radome_attenuation_empirical(
     gateset, *, frequency=5.64, hydrophobicity=0.165, n_r=2, stat=np.mean
 ):
@@ -660,6 +678,23 @@ def correct_radome_attenuation_empirical(
     return k.filled(fill_value=np.nan)
 
 
+@correct_radome_attenuation_empirical.register(DataArray)
+def _correct_radome_attenuation_empirical_xarray(obj, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        correct_radome_attenuation_empirical,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.name = "correct_radome_attenuation_empirical"
+    return out
+
+
+@singledispatch
 def pia_from_kdp(kdp, dr, *, gamma=0.08):
     """Retrieving path integrated attenuation from specific differential \
     phase (Kdp).
@@ -686,6 +721,30 @@ def pia_from_kdp(kdp, dr, *, gamma=0.08):
     return 2 * np.cumsum(alpha, axis=-1) * dr
 
 
+@pia_from_kdp.register(DataArray)
+def _pia_from_kdp_xarray(obj, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    dr = obj.range.diff("range").median("range").values / 1000.0
+
+    out = apply_ufunc(
+        pia_from_kdp,
+        obj,
+        dr,
+        input_core_dims=[[dim0, "range"], []],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = {
+        "standard_name": "path_integrated_attenuation",
+        "long_name": "Path-integrated attenuation",
+        "short_name": "PIA",
+        "units": "dB",
+    }
+    out.name = "PIA"
+
+
 class AttenMethods(XarrayMethods):
     """wradlib xarray SubAccessor methods for Atten Methods."""
 
@@ -695,6 +754,27 @@ class AttenMethods(XarrayMethods):
             return correct_attenuation_constrained(self, *args, **kwargs)
         else:
             return correct_attenuation_constrained(self._obj, *args, **kwargs)
+
+    @docstring(correct_attenuation_hb)
+    def correct_attenuation_hb(self, *args, **kwargs):
+        if not isinstance(self, AttenMethods):
+            return correct_attenuation_hb(self, *args, **kwargs)
+        else:
+            return correct_attenuation_hb(self._obj, *args, **kwargs)
+
+    @docstring(correct_radome_attenuation_empirical)
+    def correct_radome_attenuation_empirical(self, *args, **kwargs):
+        if not isinstance(self, AttenMethods):
+            return correct_radome_attenuation_empirical(self, *args, **kwargs)
+        else:
+            return correct_radome_attenuation_empirical(self._obj, *args, **kwargs)
+
+    @docstring(pia_from_kdp)
+    def pia_from_kdp(self, *args, **kwargs):
+        if not isinstance(self, AttenMethods):
+            return pia_from_kdp(self, *args, **kwargs)
+        else:
+            return pia_from_kdp(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
