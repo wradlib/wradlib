@@ -9,6 +9,10 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 ## Development Version (unreleased)
 
+**New features**
+
+* add xarray based {meth}`wradlib.ipol.IpolMethods.interpolate` API entrypoint ({pull}`742`) by {at}`kmuehlbauer`
+
 **Maintenance**
 
 * update pre-commit and lint ({pull}`741`) by {at}`kmuehlbauer`
