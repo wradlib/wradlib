@@ -323,3 +323,28 @@ def test_depolarization():
 
     np.testing.assert_array_almost_equal(dp.depolarization(zdr, 0.9), dr_0)
     np.testing.assert_array_almost_equal(dp.depolarization(1.0, rho), dr_1)
+
+
+def test_depolarization_xarray(gamic_swp):
+    gamic_swp.wrl.dp.depolarization(zdr="ZDR", rho="RHOHV")
+
+
+def test_kdp_from_phidp_xarray(gamic_swp):
+    gamic_swp.PHIDP.wrl.dp.kdp_from_phidp()
+
+
+def test_phidp_kdp_vulpiani_xarray(gamic_swp):
+    gamic_swp.PHIDP.wrl.dp.phidp_kdp_vulpiani()
+
+
+def test_texture_xarray(gamic_swp):
+    gamic_swp.wrl.dp.texture()
+    gamic_swp.PHIDP.wrl.dp.texture()
+
+
+def test_unfold_phi_xarray(gamic_swp):
+    gamic_swp.wrl.dp.unfold_phi(phidp="PHIDP", rho="RHOHV")
+
+
+def test_unfold_phi_vulpiani_xarray(gamic_swp):
+    gamic_swp.wrl.dp.unfold_phi_vulpiani(phidp="PHIDP", kdp="KDP")

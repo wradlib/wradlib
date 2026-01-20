@@ -25,6 +25,7 @@ __all__ = [
     "find_bbox_indices",
     "get_raster_origin",
     "calculate_polynomial",
+    "core_dims",
     "crop",
     "derivate",
     "despeckle",
@@ -1414,6 +1415,53 @@ def dim0(obj):
     return None
 
 
+def core_dims(obj):
+    """
+    Determine core dimensions for use with ``xarray.apply_ufunc``.
+
+    This helper inspects the object for a wradlib-style primary dimension
+    (e.g. ``"azimuth"``). If such a dimension exists, it is combined with
+    the ``"range"`` dimension to define the input and output core
+    dimensions. If no primary dimension is found, scalar core dimensions
+    are used.
+
+    Parameters
+    ----------
+    obj : xarray.DataArray
+        Input object whose dimensions are inspected.
+
+    Returns
+    -------
+    input_core_dims : list or None
+        Core dimensions for the input to ``xarray.apply_ufunc``.
+        Returns ``None`` if no primary dimension is detected.
+    output_core_dims : list of tuple
+        Core dimensions for the output of ``xarray.apply_ufunc``.
+
+    Notes
+    -----
+    This function is primarily intended for wradlib processing pipelines
+    where data may be organized either as 2D polar grids
+    (e.g. ``(azimuth, range)``) or as scalar values without a leading
+    angular dimension.
+
+    Examples
+    --------
+    >>> in_dims, out_dims = core_dims(da) #doctest: +SKIP
+    >>> xr.apply_ufunc(func, da,
+    ...                input_core_dims=in_dims,
+    ...                output_core_dims=out_dims) #doctest: +SKIP
+    """
+    dim0 = obj.wrl.util.dim0()
+    if dim0 is None:
+        input_core_dims = None
+        output_core_dims = ((),)
+    else:
+        input_core_dims = [[dim0, "range"]]
+        output_core_dims = [[dim0, "range"]]
+    return input_core_dims, output_core_dims
+
+
 def get_apply_ufunc_variables(obj, dim):
     if isinstance(dim, str):
         dims = {dim, "range"}
@@ -1594,6 +1642,13 @@ class UtilMethods(XarrayMethods):
             return dim0(self, *args, **kwargs)
         else:
             return dim0(self._obj, *args, **kwargs)
+
+    @docstring(core_dims)
+    def core_dims(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return core_dims(self, *args, **kwargs)
+        else:
+            return core_dims(self._obj, *args, **kwargs)
 
     @docstring(crop)
     def crop(self, *args, **kwargs):
