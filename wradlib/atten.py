@@ -114,6 +114,7 @@ def correct_attenuation_hb(
     pia = np.empty(gateset.shape)
     pia[..., 0] = 0.0
     ksum = 0.0
+    warn = False
 
     # multidimensional version
     # assumes that iteration is only along the last dimension
@@ -132,13 +133,16 @@ def correct_attenuation_hb(
         overflow = (gateset[..., gate + 1] + ksum) > thrs
         if np.any(overflow):
             if mode == "warn":
-                logger.warning(f"corrected signal over threshold ({thrs:3.1f})")
+                warn = True
             elif mode == "nan":
                 pia[..., gate + 1][overflow] = np.nan
             elif mode == "zero":
                 pia[..., gate + 1][overflow] = 0.0
             else:
                 raise AttenuationOverflowError
+
+    if mode == "warn" and warn:
+        logger.warning(f"corrected signal over threshold ({thrs:3.1f})")
 
     return pia
 
