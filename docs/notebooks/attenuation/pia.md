@@ -205,47 +205,26 @@ plt.tight_layout()
 Plotting all of the above methods ([Hitschfeld and Bordan](#hitschfeld-and-bordan), [Harrison](#harrison), [Kraemer](#kraemer), [Modified Kraemer](#modified-kraemer) allows for a better comparison of their behaviour. Please refer to [Jacobi et al., 2016](https://docs.wradlib.org/en/latest/bibliography.html#jacobi2016) for an in-depth discussion of this example.
 
 ```{code-cell} python
-fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(10, 12))
+pia_list = [pia_hibo, pia_harrison, pia_kraemer, pia_mkraemer]
+pia_all = xr.concat(pia_list, dim="method").assign_coords(method=["hibo", "harrison", "kraemer", "modified kraemer"])
+pia_all = pia_all.sel(azimuth=slice(53, 56))
+
+fig, axes = plt.subplots(4, 1, figsize=(10, 12))
+
 sel = da.sel(azimuth=slice(53, 56))
+ax1 = axes[0]
 sel.plot.line(ax=ax1, hue="azimuth")
 ax1.grid(True, which='both', linestyle='--', alpha=0.7)
 ax1.set_xlim(float(sel.range.min()), float(sel.range.max()))
 ax1.set_title("Raw Reflectivity along beams (dBZ)")
 
-sel1 = pia_hibo.sel(azimuth=slice(53, 56))
-sel2 = pia_harrison.sel(azimuth=slice(53, 56))
-sel3 = pia_kraemer.sel(azimuth=slice(53, 56))
-sel4 = pia_mkraemer.sel(azimuth=slice(53, 56))
-
-sel1.isel(azimuth=0).plot.line(ax=ax2, label="hibo")
-sel2.isel(azimuth=0).plot.line(ax=ax2, label="harrison")
-sel3.isel(azimuth=0).plot.line(ax=ax2, label="kraemer")
-sel4.isel(azimuth=0).plot.line(ax=ax2, label="modified kraemer")
-ax2.grid(True, which='both', linestyle='--', alpha=0.7)
-ax2.set_xlim(float(sel.range.min()), float(sel.range.max()))
-ax2.set_ylim(0, 30)
-ax2.legend()
-ax2.set_title("PIA Azimuth #1")
-
-sel1.isel(azimuth=1).plot.line(ax=ax3, label="hibo")
-sel2.isel(azimuth=1).plot.line(ax=ax3, label="harrison")
-sel3.isel(azimuth=1).plot.line(ax=ax3, label="kraemer")
-sel4.isel(azimuth=1).plot.line(ax=ax3, label="modified kraemer")
-ax3.grid(True, which='both', linestyle='--', alpha=0.7)
-ax3.set_xlim(float(sel.range.min()), float(sel.range.max()))
-ax3.set_ylim(0, 30)
-ax3.legend()
-ax3.set_title("PIA Azimuth #2")
-
-sel1.isel(azimuth=2).plot.line(ax=ax4, label="hibo")
-sel2.isel(azimuth=2).plot.line(ax=ax4, label="harrison")
-sel3.isel(azimuth=2).plot.line(ax=ax4, label="kraemer")
-sel4.isel(azimuth=2).plot.line(ax=ax4, label="modified kraemer")
-ax4.grid(True, which='both', linestyle='--', alpha=0.7)
-ax4.set_xlim(float(sel.range.min()), float(sel.range.max()))
-ax4.set_ylim(0, 30)
-ax4.legend()
-ax4.set_title("PIA Azimuth #3")
+for i, ax in enumerate(axes[1:]):
+    pia_plot = pia_all.isel(azimuth=i)
+    pia_plot.plot.line(hue="method", ax=ax)
+    ax.grid(True, linestyle="--", alpha=0.7)
+    ax.set_xlim(float(pia_all.range.min()), float(pia_all.range.max()))
+    ax.set_ylim(0, 30)
+    ax.set_title(f"PIA Azimuth {pia_plot.azimuth.values}")
 
 plt.tight_layout()
 ```
