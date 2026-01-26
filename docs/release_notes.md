@@ -12,6 +12,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **New features**
 
 * add xarray based {meth}`wradlib.ipol.IpolMethods.interpolate` API entrypoint ({pull}`742`) by {at}`kmuehlbauer`
+* add xarray based functions {meth}`wradlib.atten.AttenMethods.correct_attenuation_hb`, {meth}`wradlib.atten.AttenMethods.correct_radome_attenuation_empirical` and {meth}`wradlib.atten.AttenMethods.pia_from_kdp` to atten-accessor {class}`wradlib.ipol.AttenMethods`, add tests and notebooks ({pull}`743`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
