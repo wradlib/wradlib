@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -33,28 +33,28 @@ __all__ = [
     "RectGrid",
     "RectBin",
     "QuadriArea",
+    "griddata",
+    "map_coordinates",
     "interpolate",
     "interpolate_polar",
-    "cart_to_irregular_interp",
-    "cart_to_irregular_spline",
+    "get_mapping",
     "IpolMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import re
+from dataclasses import dataclass
 from functools import reduce, singledispatch
 
 import numpy as np
 import scipy
+import xarray as xr
 from packaging.version import Version
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
 
-# from xarray import DataArray, apply_ufunc
 from wradlib import georef, util, zonalstats
 from wradlib.util import XarrayMethods, docstring
-
-xr = util.import_optional("xarray")
 
 
 class MissingSourcesError(Exception):
@@ -174,6 +174,47 @@ class IpolBase:
             return vals
 
 
+def _query_tree(tree, trg, **kwargs):
+    if Version(scipy.__version__) < Version("1.6"):
+        kwargs.setdefault("n_jobs", -1)
+    else:
+        kwargs.setdefault("workers", -1)
+    dists, ix = tree.query(trg, **kwargs)
+    # avoid bug, if there is only one neighbor at all
+    if dists.ndim == 1:
+        dists = dists[:, np.newaxis]
+        ix = ix[:, np.newaxis]
+    return dists, ix
+
+
+def _create_tree(src, **kwargs):
+    # plant a tree, use unbalanced tree as default
+    kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+    return spatial.cKDTree(src, **kwargs)
+
+
+def _call_nearest(vals, ix, dists, n=1, maxdist=None, **kwargs):
+    # get first neighbour
+    trgvals = vals[ix[:, 0]]
+    dist_n = dists[..., 0].copy()
+
+    # iteratively fill NaN with next neighbours
+    isnan = np.isnan(trgvals)
+    if n > 1 & np.count_nonzero(isnan):
+        for i in range(n - 1):
+            nanidx = np.argwhere(isnan)[..., 0]
+            trgvals[isnan] = vals[ix[:, i + 1]][isnan]
+            dist_n[nanidx] = dists[..., i + 1][nanidx]
+            isnan = np.isnan(trgvals)
+            if not np.count_nonzero(isnan):
+                break
+
+    if maxdist is None:
+        return trgvals
+    else:
+        return np.where(dist_n > maxdist, np.nan, trgvals)
+
+
 class Nearest(IpolBase):
     """
     Nearest(src, trg)
@@ -206,15 +247,15 @@ class Nearest(IpolBase):
     """
 
     def __init__(self, src, trg, *, remove_missing=0, **kwargs):
+        query_kwargs = kwargs.pop("query_kwargs", {})
+
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
-            # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
-            self.tree = spatial.cKDTree(src, **kwargs)
+            self.tree = _create_tree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -226,11 +267,9 @@ class Nearest(IpolBase):
         self.nnearest = remove_missing + 1
 
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
-        # avoid bug, if there is only one neighbor at all
-        if self.dists.ndim == 1:
-            self.dists = self.dists[:, np.newaxis]
-            self.ix = self.ix[:, np.newaxis]
+        self.dists, self.ix = _query_tree(
+            self.tree, trg, k=self.nnearest, **query_kwargs
+        )
 
     def __call__(self, vals, *, maxdist=None):
         """
@@ -262,26 +301,266 @@ class Nearest(IpolBase):
         """
         self._check_shape(vals)
 
-        # get first neighbour
-        trgvals = vals[self.ix[:, 0]]
-        dists = self.dists[..., 0].copy()
+        return _call_nearest(
+            vals, self.ix, self.dists, n=self.nnearest, maxdist=maxdist
+        )
 
-        # iteratively fill NaN with next neighbours
-        isnan = np.isnan(trgvals)
-        nanidx = np.argwhere(isnan)[..., 0]
-        if self.nnearest > 1 & np.count_nonzero(isnan):
-            for i in range(self.nnearest - 1):
-                trgvals[isnan] = vals[self.ix[:, i + 1]][isnan]
-                dists[nanidx] = self.dists[..., i + 1][nanidx]
-                isnan = np.isnan(trgvals)
-                nanidx = np.argwhere(isnan)[..., 0]
-                if not np.count_nonzero(isnan):
-                    break
 
-        if maxdist is None:
-            return trgvals
+def _interpolate_mapping(src, trg, **kwargs):
+    """
+    Interpolate a Dataset or DataArray using precomputed KDTree dataset.
+
+    Parameters
+    ----------
+    src : :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
+        Dataset or DataArray to interpolate. Expected dims: (eg. azimuth, range)
+    trg : :class:`xarray:xarray.Dataset'
+        KDTree output with 'ix' indices, 'dists' distances and 'x','y' coordinates
+
+    Returns
+    -------
+    :class:`xarray:xarray.Dataset' or :class:`xarray:xarray.DataArray'
+        Interpolated data on target grid (y, x)
+    """
+    method = kwargs.get("method")
+    METHODS = dict(
+        nearest=_call_nearest,
+        inverse_distance=_call_inverse_distance_weighting,
+    )
+    kwargs.update({"func": METHODS[method]})
+
+    src_coords = _normalize_coords(kwargs.get("src_coords"))
+    trg_coords = _normalize_coords(kwargs.get("trg_coords"))
+
+    def _get_core_coords(obj, coords):
+        x = coords.x
+        y = coords.y
+
+        x_coord = obj.coords[x]
+        y_coord = obj.coords[y]
+
+        if x_coord.dims == y_coord.dims:
+            npoints = x_coord.dims
         else:
-            return np.where(dists > maxdist, np.nan, trgvals)
+            npoints = (y_coord.dims[0], x_coord.dims[0])
+        return x_coord, y_coord, npoints
+
+    _, _, npoints1 = _get_core_coords(src, src_coords)
+    trg_x_coord, trg_y_coord, npoints2 = _get_core_coords(trg, trg_coords)
+
+    # separate variables that will be applied with ufunc
+    if isinstance(src, xr.Dataset):
+        src_to_interp, keep = util.get_apply_ufunc_variables(src, npoints1)
+    else:
+        src_to_interp = src
+
+    # stack source and index arrays
+    src_stacked = src_to_interp.stack(npoints1=npoints1)
+    trg_stacked = trg.stack(npoints2=npoints2)
+
+    x = trg.ix.sizes[npoints2[1]]
+    y = trg.ix.sizes[npoints2[0]]
+    sizes = dict(x=x, y=y)
+
+    # vectorization needed?
+    vectorize = not set(src_stacked.dims) <= {"npoints1"}
+
+    # maxdist
+    # hack: preventing interpolation outside domain
+    maxdist = np.sqrt(
+        (trg_x_coord[1] - trg_x_coord[0]) ** 2 + (trg_y_coord[1] - trg_y_coord[0]) ** 2
+    ).values * np.sqrt(2)
+    kwargs.setdefault("maxdist", maxdist)
+
+    # determine output dtypes
+    if isinstance(src_stacked, xr.DataArray):
+        output_dtypes = [src_stacked.dtype]
+    else:
+        output_dtypes = [src_stacked[list(src_stacked.data_vars.keys())[0]].dtype]
+
+    def wrapper(src_vals, ix, dists, **kwargs):
+        """wrapper around interpolator numpy implementation
+        src_vals : (npoints1)
+        ix       : (npoints2, k)
+        returns  : (y, x)
+        """
+        x = kwargs.pop("x")
+        y = kwargs.pop("y")
+        func = kwargs.pop("func")
+        out = func(src_vals, ix, dists, **kwargs)
+        out = out.reshape((y, x))
+        return out
+
+    kwargs.update(sizes)
+    out = xr.apply_ufunc(
+        wrapper,
+        src_stacked,
+        trg_stacked.ix,
+        trg_stacked.dists,
+        input_core_dims=[["npoints1"], ["npoints2", "k"], ["npoints2", "k"]],
+        output_core_dims=[npoints2],
+        vectorize=vectorize,
+        dask="parallelized",
+        kwargs=kwargs,
+        output_dtypes=output_dtypes,
+        output_sizes=sizes,
+        on_missing_core_dim="copy",
+    )
+
+    # restore attributes and merge with kept variables if Dataset
+    if isinstance(src, xr.Dataset):
+        out = xr.merge([out, keep])
+    else:
+        out.attrs = src.attrs
+        out.name = src.name
+
+    # re-add x, y coordinates from trg
+    out = out.assign_coords(x=trg_x_coord, y=trg_y_coord)
+
+    return out
+
+
+@dataclass(frozen=True)
+class Coords:
+    x: str = "x"
+    y: str = "y"
+
+
+def _normalize_coords(coords):
+    if coords is None:
+        return Coords()
+    if isinstance(coords, Coords):
+        return coords
+    if isinstance(coords, dict):
+        return Coords(**coords)
+    raise TypeError("coords must be Coords or dict")
+
+
+def get_mapping(src, trg, src_coords=None, trg_coords=None, **kwargs):
+    """
+    Create :class:`xarray:xarray.Dataset` with KDTree indices and distances derived from src and trg.
+
+    Parameters
+    ----------
+    src: :class:`xarray:xarray.Dataset` or :class:`xarray:xarray.DataArray`
+        Source data containing spatial coordinates. It should have two dimensions,
+        typically representing x (azimuth, range) and y (azimuth, range).
+    trg: :class:`xarray:xarray.Dataset` or :class:`xarray:xarray.DataArray`
+        Target data with spatial coordinates to interpolate.
+        It should also have two dimensions, designated by x and y.
+
+    Keyword Arguments
+    -----------------
+    src_coords : dict or Coords, optional
+        Mapping from canonical spatial roles to coordinate names in the source
+        object. Keys must include `"x"` and `"y"`. For example:
+        `{"x": "lon", "y": "lat"}`.
+        If None, defaults to `{"x": "x", "y": "y"}`.
+    trg_coords : dict or Coords, optional
+        Mapping from canonical spatial roles to coordinate names in the target
+        object. Keys must include `"x"` and `"y"`.
+        If None, defaults to `{"x": "x", "y": "y"}`.
+    **kwargs: additional keyword arguments
+        Additional parameters that may be passed to the KDTree implementation and query.
+
+    Returns
+    -------
+    :class:`xarray:xarray.Dataset`:
+        ix - indices
+        dists - distances
+    """
+
+    tree_kwargs = util.get_keys(
+        kwargs, ["leafsize", "compact_nodes", "copy_data", "balanced_tree", "boxsize"]
+    )
+    tree_kwargs.setdefault("balanced_tree", False)
+    query_kwargs = util.get_keys(
+        kwargs, ["k", "eps", "p", "distance_upper_bound", "workers"]
+    )
+    query_kwargs.setdefault("k", 1)
+    query_kwargs.setdefault("workers", -1)
+
+    src_coords = _normalize_coords(src_coords)
+    trg_coords = _normalize_coords(trg_coords)
+
+    def _prep_coords(x, y, stack_dim):
+        if x.ndim == 2:
+            x_stacked = x.stack(**{stack_dim: x.dims})
+            y_stacked = y.stack(**{stack_dim: y.dims})
+        else:
+            x2d, y2d = xr.broadcast(x, y)
+            x_stacked = x2d.stack(**{stack_dim: x2d.dims})
+            y_stacked = y2d.stack(**{stack_dim: y2d.dims})
+
+        points = np.column_stack([x_stacked.values, y_stacked.values])
+        return points, x_stacked, y_stacked
+
+    # coordinate prep
+    src_points, src_x_stacked, src_y_stacked = _prep_coords(
+        src.coords[src_coords.x], src.coords[src_coords.y], stack_dim="npoints"
+    )
+    trg_points, trg_x_stacked, trg_y_stacked = _prep_coords(
+        trg.coords[trg_coords.x], trg.coords[trg_coords.y], stack_dim="npoints2"
+    )
+
+    # build tree
+    tree = spatial.cKDTree(src_points, **tree_kwargs)
+    dists, ix = _query_tree(tree, trg_points, **query_kwargs)
+
+    # return ix/dists as Dataset
+    out = xr.Dataset(
+        {
+            "ix": (["npoints2", "k"], ix),
+            "dists": (["npoints2", "k"], dists),
+        },
+        coords={
+            "npoints2": trg_x_stacked["npoints2"],
+            "k": np.arange(query_kwargs["k"]),
+        },
+    )
+
+    out = out.unstack("npoints2")
+    out.attrs = dict(
+        source="wradlib",
+        model="kdtree",
+        tree_kwargs=tree_kwargs,
+        query_kwargs=query_kwargs,
+    )
+
+    return out
+
+
+def _call_inverse_distance_weighting(
+    vals, ix, dists, idw_p=2.0, remove_missing=False, maxdist=None, **kwargs
+):
+    weights = 1.0 / dists**idw_p
+
+    # if maxdist isn't given, take the maximum distance
+    if maxdist is not None:
+        outside = dists > maxdist
+        weights[outside] = 0
+
+    # take care of point coincidence
+    weights[np.isposinf(weights)] = 1e12
+
+    # shape handling (time, ensemble etc)
+    wshape = weights.shape
+    weights.shape = wshape + ((vals.ndim - 1) * (1,))
+
+    # expand vals to trg grid
+    trgvals = vals[ix]
+
+    # nan handling
+    if remove_missing:
+        isnan = np.isnan(trgvals)
+        weights = np.broadcast_to(weights, isnan.shape)
+        masked_weights = np.ma.array(weights, mask=isnan)
+
+        interpol = np.nansum(weights * trgvals, axis=1) / np.sum(masked_weights, axis=1)
+    else:
+        interpol = np.sum(weights * trgvals, axis=1) / np.sum(weights, axis=1)
+
+    return interpol
 
 
 class Idw(IpolBase):
@@ -322,15 +601,14 @@ class Idw(IpolBase):
     """
 
     def __init__(self, src, trg, *, nnearest=4, p=2.0, remove_missing=False, **kwargs):
+        query_kwargs = kwargs.pop("query_kwargs", {})
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
-            # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
-            self.tree = spatial.cKDTree(src, **kwargs)
+            self.tree = _create_tree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -354,16 +632,9 @@ class Idw(IpolBase):
 
         self.p = p
         # query tree
-        # scipy kwarg changed from version 1.6
-        if Version(scipy.__version__) < Version("1.6"):
-            query_kwargs = dict(n_jobs=-1)
-        else:
-            query_kwargs = dict(workers=-1)
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
-        # avoid bug, if there is only one neighbor at all
-        if self.dists.ndim == 1:
-            self.dists = self.dists[:, np.newaxis]
-            self.ix = self.ix[:, np.newaxis]
+        self.dists, self.ix = _query_tree(
+            self.tree, trg, k=self.nnearest, **query_kwargs
+        )
 
     def __call__(self, vals, *, maxdist=None):
         """
@@ -395,36 +666,14 @@ class Idw(IpolBase):
         """
         self._check_shape(vals)
 
-        weights = 1.0 / self.dists**self.p
-
-        # if maxdist isn't given, take the maximum distance
-        if maxdist is not None:
-            outside = self.dists > maxdist
-            weights[outside] = 0
-
-        # take care of point coincidence
-        weights[np.isposinf(weights)] = 1e12
-
-        # shape handling (time, ensemble etc)
-        wshape = weights.shape
-        weights.shape = wshape + ((vals.ndim - 1) * (1,))
-
-        # expand vals to trg grid
-        trgvals = vals[self.ix]
-
-        # nan handling
-        if self.remove_missing:
-            isnan = np.isnan(trgvals)
-            weights = np.broadcast_to(weights, isnan.shape)
-            masked_weights = np.ma.array(weights, mask=isnan)
-
-            interpol = np.nansum(weights * trgvals, axis=1) / np.sum(
-                masked_weights, axis=1
-            )
-        else:
-            interpol = np.sum(weights * trgvals, axis=1) / np.sum(weights, axis=1)
-
-        return interpol
+        return _call_inverse_distance_weighting(
+            vals,
+            self.ix,
+            self.dists,
+            idw_p=self.p,
+            remove_missing=self.remove_missing,
+            maxdist=maxdist,
+        )
 
 
 class Linear(IpolBase):
@@ -1080,8 +1329,13 @@ class OrdinaryKriging(IpolBase):
         else:
             self.nnearest = nnearest
 
-        # tree query
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # query tree
+        # scipy kwarg changed from version 1.6
+        if Version(scipy.__version__) < Version("1.6"):
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -1271,7 +1525,12 @@ class ExternalDriftKriging(IpolBase):
         else:
             self.nnearest = nnearest
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # scipy kwarg changed from version 1.6
+        if Version(scipy.__version__) < Version("1.6"):
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -1442,9 +1701,13 @@ class ExternalDriftKriging(IpolBase):
 # -----------------------------------------------------------------------------
 # Wrapper functions
 # -----------------------------------------------------------------------------
+@singledispatch
 def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     """
-    Convenience function to use the interpolation classes in an efficient way
+    Convenience function to use the interpolation classes in an efficient way.
+
+    This docstring explains the pure numpy function. For xarray-based usage see
+    :meth:`wradlib.ipol.IpolMethods.interpolate`.
 
     The interpolation classes in :mod:`wradlib.ipol` are computationally very
     efficient if they are applied on large multidimensional arrays of which
@@ -1547,6 +1810,141 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
             ip = ipclass(src, trg, *args, **kwargs)
             result = ip(vals)
     return result
+
+
+@interpolate.register(xr.DataArray)
+@interpolate.register(xr.Dataset)
+def _interpolate_xarray(src, trg, **kwargs):
+    """
+    Interpolate data from source coordinates to target coordinates using a chosen backend.
+
+    This function provides a unified interface to multiple interpolation backends
+    (:class:`scipy:scipy.spatial.KDTree`-based, :func:`scipy:scipy.interpolate.griddata` based, and :func:`scipy:scipy.ndimage.map_coordinates`) through a single
+    `method` keyword. The behavior depends on the chosen backend and the dimensionality
+    of the source and target data.
+
+    Backends and method strings
+    ---------------------------
+
+    :class:`scipy:scipy.spatial.KDTree`-based methods (structured or unstructured points):
+        - 'nearest'                : nearest neighbor
+        - 'inverse_distance'       : inverse distance weighting (IDW)
+        - 'ordinary_kriging'       : ordinary kriging
+
+    :func:`scipy:scipy.interpolate.griddata` (arbitrary N-dimensional points):
+        - 'griddata'               : uses SciPy default ('linear')
+        - 'griddata_linear'        : linear interpolation
+        - 'griddata_cubic'         : cubic interpolation
+
+    :func:`scipy:scipy.ndimage.map_coordinates` (N-dimensional arrays with fractional coordinates):
+        - 'map_coordinates'        : default order=3 (cubic)
+        - 'map_coordinates_nearest': order=0
+        - 'map_coordinates_linear' : order=1
+        - 'map_coordinates_quadratic': order=2
+        - 'map_coordinates_cubic'  : order=3
+        - 'map_coordinates_quartic': order=4
+        - 'map_coordinates_quintic': order=5
+
+    Parameters
+    ----------
+    src : :class:`xarray:xarray.DataArray` or :class:`xarray:xarray.Dataset`
+        Source data to be interpolated. Can be N-dimensional.
+    trg : :class:`xarray:xarray.DataArray` or :class:`xarray:xarray.Dataset`
+        Target coordinates. Expected shape and dimensionality depend on the backend:
+            - :class:`scipy:scipy.spatial.KDTree`: unstructured or structured points (any number of dimensions)
+            - :func:`scipy:scipy.interpolate.griddata`: N-dimensional points compatible with src
+            - :func:`scipy:scipy.ndimage.map_coordinates`: fractional coordinates along each axis
+    method : str
+        Interpolation method / backend selection. See "Backends and method strings" above.
+        Suffixes indicate backend-specific interpolation type (e.g., 'griddata_cubic').
+    kwargs : dict
+        Additional keyword arguments passed to the low-level interpolation routines.
+
+    Returns
+    -------
+    :class:`xarray:xarray.DataArray` or :class:`xarray:xarray.Dataset`
+        Interpolated data on the target coordinates. The output type matches the input.
+
+    Notes
+    -----
+    - :class:`scipy:scipy.spatial.KDTree`-based methods automatically compute a mapping from source to target unless a
+      precomputed mapping is provided.
+    - :func:`scipy:scipy.interpolate.griddata` uses 'linear' by default if no specific method is provided.
+    - :func:`scipy:scipy.ndimage.map_coordinates` uses order=3 (cubic) by default. User-supplied `order` overrides
+      the method suffix; a warning is issued if both are provided.
+    - The `method` keyword encodes both backend and interpolation type; the backend is inferred
+      from the prefix ('nearest', 'griddata', 'map_coordinates', etc.).
+    - Backend-specific kwargs take precedence over defaults when provided.
+    - This function supports arbitrary N-dimensional data; polar-to-Cartesian is just one common use case.
+
+    Examples
+    --------
+    >>> # KDTree nearest neighbor interpolation
+    >>> out = src.wrl.ipol.interpolate(target, method='nearest') #doctest: +SKIP
+
+    >>> # KDTree inverse distance weighting
+    >>> out = src.wrl.ipol.interpolate(target, method='inverse_distance') #doctest: +SKIP
+
+    >>> # SciPy griddata with cubic interpolation
+    >>> out = src.wrl.ipol.interpolate(target, method='griddata_cubic', backend_kwargs={'fill_value': np.nan}) #doctest: +SKIP
+
+    >>> # SciPy map_coordinates with quintic spline interpolation
+    >>> out = src.wrl.ipol.interpolate(target, method='map_coordinates_quintic') #doctest: +SKIP
+    """
+    BACKENDS = [
+        "nearest",
+        "inverse_distance",
+        "ordinary_kriging",
+        "griddata",
+        "map_coordinates",
+    ]
+    _kwargs = kwargs.copy()
+    method = _kwargs.get("method")
+
+    _kwargs.setdefault("src_coords", Coords())
+    _kwargs.setdefault("trg_coords", Coords())
+
+    backend = None
+    backend_method = None
+    for b in BACKENDS:
+        if method.startswith(b):
+            backend = b
+            suffix = method[len(b) :]
+            if suffix.startswith("_"):
+                backend_method = suffix[1:]
+            break
+
+    if "griddata" == backend:
+        if backend_method:
+            _kwargs["method"] = backend_method
+        return _griddata_xarray(src, trg, **_kwargs)
+    elif "map_coordinates" == backend:
+        if backend_method:
+            if "order" in _kwargs:
+                util.warn(
+                    f"User-supplied 'order' ({_kwargs['order']}) overrides method='{backend_method}'"
+                )
+            else:
+                ORDER_MAP = {
+                    "nearest": 0,
+                    "linear": 1,
+                    "quadratic": 2,
+                    "cubic": 3,
+                    "quartic": 4,
+                    "quintic": 5,
+                }
+            _kwargs["order"] = ORDER_MAP.get(backend_method, 1)
+        _kwargs.pop("method", None)
+        return _map_coordinates_xarray(src, trg, **_kwargs)
+    elif method in ["nearest", "inverse_distance", "ordinary_kriging"]:
+        if not (
+            trg.attrs.get("source", None) == "wradlib"
+            and trg.attrs.get("model", None) in ["kdtree"]
+        ):
+            trg = get_mapping(src, trg, **_kwargs)
+        return _interpolate_mapping(src, trg, **_kwargs)
+    else:
+        raise ValueError(f"Unknown interpolation method: {method}")
 
 
 @singledispatch
@@ -1664,6 +2062,15 @@ def _interpolate_polar_xarray(obj, mask, **kwargs):
 
 
 def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
+    util.warn(
+        "`cart_to_irregular_interp` is deprecated; use `griddata` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return griddata(cartgrid, values, newgrid, **kwargs)
+
+
+def griddata(cartgrid, values, newgrid, **kwargs):
     """
     Interpolate array ``values`` defined by cartesian coordinate array
     ``cartgrid`` to new coordinates defined by ``newgrid`` using
@@ -1705,7 +2112,163 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     return interp
 
 
+def _griddata_xarray(src, trg, **kwargs):
+    """Interpolate src DataArray onto irregular trg coordinates using scipy.griddata.
+
+    Parameters
+    ----------
+    src : xr.DataArray
+        Source 2D data (y, x) or with extra dims.
+    trg : xr.DataArray
+        Target coordinates (must have 'y' and 'x').
+    method : str
+        Interpolation method: 'linear', 'nearest', 'cubic'.
+    kwargs : dict
+        Additional kwargs passed to griddata (e.g., fill_value).
+    """
+    kwargs.setdefault("fill_value", np.nan)
+
+    def _griddata_2d(src_x, src_y, values, trg_x, trg_y, **kwargs):
+        return sinterp.griddata((src_x, src_y), values, (trg_x, trg_y), **kwargs)
+
+    order = dict(nearest=0, linear=1, cubic=3)
+    kwargs.setdefault("method", "linear")
+
+    src = util.crop(src, trg, pad=order[kwargs.get("method")])
+
+    src_coords = kwargs.pop("src_coords")
+    trg_coords = kwargs.pop("trg_coords")
+
+    src2 = src.stack(points1=src.dims)
+    trg2 = trg.stack(points2=trg.dims)
+
+    out = xr.apply_ufunc(
+        _griddata_2d,
+        src2[src_coords.x],
+        src2[src_coords.y],
+        src2,
+        trg2[trg_coords.x],
+        trg2[trg_coords.y],
+        input_core_dims=[
+            ["points1"],
+            ["points1"],
+            ["points1"],
+            ["points2"],
+            ["points2"],
+        ],
+        output_core_dims=[["points2"]],
+        vectorize=False,
+        dask="parallelized",
+        kwargs=kwargs,
+        output_dtypes=[src.dtype],
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+
+    return (
+        out.unstack("points2")
+        .transpose(*trg.dims)
+        .assign_coords(trg.coords)
+        .rename(src.name)
+        .assign_attrs(src.attrs)
+    )
+
+
+def _cartesian_index(x_trg, y_trg, x_src, y_src, *, origin):
+    nx = x_src.size
+    ny = y_src.size
+
+    cxmin = x_src.min()
+    cxmax = x_src.max()
+    cymin = y_src.min()
+    cymax = y_src.max()
+
+    xi = (nx - 1) * (x_trg - cxmin) / (cxmax - cxmin)
+
+    if origin == "lower":
+        yi = (ny - 1) * (y_trg - cymin) / (cymax - cymin)
+    else:
+        yi = ny - (ny - 1) * (y_trg - cymin) / (cymax - cymin)
+
+    return xi, yi
+
+
+@singledispatch
+def _cartesian_to_indices(cartgrid, newgrid, *, origin="lower"):
+    """
+    Compute floating-point indices into ``values`` for spline interpolation.
+
+    Parameters
+    ----------
+    cartgrid : ndarray
+        (ny, nx, 2) array defining cartesian grid (x/y or lon/lat)
+    newgrid : ndarray
+        (..., 2) array defining target coordinates
+    origin : {"lower", "upper"}
+
+    Returns
+    -------
+    xi, yi : ndarray
+        Floating-point indices with shape newgrid.shape[:-1]
+    """
+    x_src = cartgrid[0, ..., 0]
+    y_src = cartgrid[..., 0, 1]
+
+    x_trg = newgrid[..., 0].ravel()
+    y_trg = newgrid[..., 1].ravel()
+
+    xi, yi = _cartesian_index(
+        x_trg,
+        y_trg,
+        x_src,
+        y_src,
+        origin=origin,
+    )
+
+    return xi, yi
+
+
+@_cartesian_to_indices.register(xr.DataArray)
+def _cartesian_to_indices_xarray(src, trg, **kwargs):
+    """xarray-native precomputation of spline indices."""
+    src_coords = kwargs.pop("src_coords")
+    trg_coords = kwargs.pop("trg_coords")
+
+    sx = src_coords.x
+    sy = src_coords.y
+    tx = trg_coords.x
+    ty = trg_coords.y
+
+    x_src = src.coords[sx]
+    y_src = src.coords[sy]
+    origin = "lower" if y_src[1] > y_src[0] else "upper"
+
+    x_trg = trg.coords[tx].stack(points=trg.coords[tx].dims)
+    y_trg = trg.coords[ty].stack(points=trg.coords[ty].dims)
+
+    xi, yi = _cartesian_index(
+        x_trg,
+        y_trg,
+        x_src,
+        y_src,
+        origin=origin,
+    )
+
+    return xr.Dataset(
+        {"xi": xi, "yi": yi},
+        coords={"points": x_trg.points},
+    )
+
+
 def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
+    util.warn(
+        "`cart_to_irregular_spline` is deprecated; use `map_coordinates` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return map_coordinates(cartgrid, values, newgrid, **kwargs)
+
+
+def map_coordinates(cartgrid, values, newgrid, **kwargs):
     """
     Map array ``values`` defined by cartesian coordinate array ``cartgrid``
     to new coordinates defined by ``newgrid`` using spline interpolation.
@@ -1732,38 +2295,63 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     --------
     See :ref:`notebooks:notebooks/beamblockage/beamblockage:preprocessing the dem`.
     """
+    kwargs.setdefault("mode", "nearest")
+    kwargs.setdefault("cval", np.nan)
+    kwargs.setdefault("order", 1)
 
-    # TODO: dimension checking
-    newshape = newgrid.shape[:-1]
+    xi, yi = _cartesian_to_indices(
+        cartgrid,
+        newgrid,
+        origin=util.get_raster_origin(cartgrid),
+    )
 
-    xi = newgrid[..., 0].ravel()
-    yi = newgrid[..., 1].ravel()
-
-    nx = cartgrid.shape[1]
-    ny = cartgrid.shape[0]
-
-    cxmin = np.min(cartgrid[..., 0])
-    cxmax = np.max(cartgrid[..., 0])
-    cymin = np.min(cartgrid[..., 1])
-    cymax = np.max(cartgrid[..., 1])
-
-    # this functionality finds the floating point
-    # indices into the value array (0:nx-1)
-    # can be transferred into separate function
-    # if necessary
-    xi = (nx - 1) * (xi - cxmin) / (cxmax - cxmin)
-
-    # check origin to calculate y index
-    if util.get_raster_origin(cartgrid) == "lower":
-        yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
-    else:
-        yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
-
-    # interpolation by map_coordinates
     interp = ndimage.map_coordinates(values, [yi, xi], **kwargs)
-    interp = interp.reshape(newshape)
+    return interp.reshape(newgrid.shape[:-1])
 
-    return interp
+
+def _map_coordinates_xarray(src, trg, **kwargs):
+    """
+    Apply spline interpolation to an xarray DataArray.
+    """
+    kwargs.setdefault("mode", "nearest")
+    kwargs.setdefault("cval", np.nan)
+    kwargs.setdefault("order", 1)
+
+    src = util.crop(src, trg, pad=kwargs.get("order"))
+
+    indices = _cartesian_to_indices(src, trg, **kwargs)
+
+    src_coords = kwargs.get("src_coords")
+    sx = src_coords.x
+    sy = src_coords.y
+
+    kwargs.pop("src_coords")
+    kwargs.pop("trg_coords")
+
+    def _map_coordinates_2d(arr, yi, xi, **kwargs):
+        coords = np.vstack([yi, xi])
+        return ndimage.map_coordinates(arr, coords, **kwargs)
+
+    out = xr.apply_ufunc(
+        _map_coordinates_2d,
+        src,
+        indices["yi"],
+        indices["xi"],
+        input_core_dims=[[sy, sx], ["points"], ["points"]],
+        output_core_dims=[["points"]],
+        vectorize=False,
+        dask="parallelized",
+        kwargs=kwargs,
+        output_dtypes=[src.dtype],
+    )
+
+    return (
+        out.unstack("points")
+        .transpose(*trg.dims)
+        .assign_coords(trg.coords)
+        .rename(src.name)
+        .assign_attrs(src.attrs)
+    )
 
 
 class IpolMethods(XarrayMethods):
@@ -1775,6 +2363,20 @@ class IpolMethods(XarrayMethods):
             return interpolate_polar(self, *args, **kwargs)
         else:
             return interpolate_polar(self._obj, *args, **kwargs)
+
+    @docstring(get_mapping)
+    def get_mapping(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return get_mapping(self, *args, **kwargs)
+        else:
+            return get_mapping(self._obj, *args, **kwargs)
+
+    @docstring(_interpolate_xarray)
+    def interpolate(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return interpolate(self, *args, **kwargs)
+        else:
+            return interpolate(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

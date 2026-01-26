@@ -110,7 +110,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "wradlib"
-copyright = "2011-2025, wradlib developers"
+copyright = "2011-2026, wradlib developers"
 author = "Wradlib Community"
 url = "https://github.com/wradlib"
 
@@ -165,7 +165,7 @@ autodoc_default_options = {
 }
 
 myst_substitutions = {
-    "today": dt.datetime.utcnow().strftime("%Y-%m-%d"),
+    "today": dt.datetime.now(dt.UTC).strftime("%Y-%m-%d"),
     "release": release,
     "wradlib": "$\\omega radlib$",
     "xradar": "[xradar](https://xradar.rtfd.io)",
@@ -188,9 +188,6 @@ exclude_patterns = [
     ".DS_Store",
     "links.rst",
     "**.ipynb_checkpoints",
-    # "examples/notebooks/**/*.md",
-    # "examples/notebooks/*.md",
-    #    "generated/*",
 ]
 
 # -- myst_nb specifics --
