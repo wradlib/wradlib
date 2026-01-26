@@ -1568,6 +1568,102 @@ def aspect(obj):
     )
 
 
+@singledispatch
+def texture(data):
+    """Compute the texture of data.
+
+    Compute the texture of the data by comparing values with a 3x3 neighborhood
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        multidimensional array with shape (..., number of beams, number
+        of range bins)
+
+    Returns
+    -------
+    texture : :class:`numpy:numpy.ndarray`
+        array of textures with the same shape as data
+
+    """
+    # one-element wrap-around padding for last two axes
+    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode="wrap")
+
+    # set first and last range elements to NaN
+    x[..., 0] = np.nan
+    x[..., -1] = np.nan
+
+    # get neighbours using views into padded array
+    x1 = x[..., :-2, 1:-1]  # center:2
+    x2 = x[..., 1:-1, :-2]  # 4
+    x3 = x[..., 2:, 1:-1]  # 8
+    x4 = x[..., 1:-1, 2:]  # 6
+    x5 = x[..., :-2, :-2]  # 1
+    x6 = x[..., :-2, 2:]  # 3
+    x7 = x[..., 2:, 2:]  # 9
+    x8 = x[..., 2:, :-2]  # 7
+
+    # stack arrays
+    xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8])
+
+    # get count of valid neighbouring pixels
+    xa_valid_count = np.count_nonzero(~np.isnan(xa), axis=0)
+
+    # root mean of squared differences
+    rmsd = np.sqrt(np.nansum((xa - data) ** 2, axis=0) / xa_valid_count)
+
+    # reinforce that NaN values should have NaN textures
+    rmsd[np.isnan(data)] = np.nan
+
+    return rmsd
+
+
+@texture.register(xr.Dataset)
+@texture.register(xr.DataArray)
+def _texture_xarray(obj):
+    """Compute the texture of data.
+
+    Compute the texture of the data by comparing values with a 3x3 neighborhood
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        DataArray
+
+    Returns
+    ------
+    texture : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    if isinstance(obj, xr.Dataset):
+        obj, keep = get_apply_ufunc_variables(obj, dim0)
+    out = xr.apply_ufunc(
+        texture,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    if isinstance(obj, xr.DataArray):
+        attrs = obj.attrs
+        standard_name = attrs["standard_name"].split("_")
+        standard_name.append("texture")
+        attrs["standard_name"] = "_".join(standard_name)
+        attrs["long_name"] = "Texture of " + attrs["long_name"]
+        attrs["units"] = "unitless"
+        out.attrs = attrs
+        out.name = obj.name + "_TEXTURE"
+    else:
+        out = xr.merge([out, keep])
+    return out
+
+
 class XarrayMethods:
     """BaseClass to bind xarray methods to wradlib SubAccessor
 
@@ -1663,6 +1759,13 @@ class UtilMethods(XarrayMethods):
             return aspect(self, *args, **kwargs)
         else:
             return aspect(self._obj, *args, **kwargs)
+
+    @docstring(_texture_xarray)
+    def texture(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return texture(self, *args, **kwargs)
+        else:
+            return texture(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

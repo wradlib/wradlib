@@ -526,6 +526,36 @@ def _kdp_from_phidp_xarray(obj, *, winlen=7, **kwargs):
     return out
 
 
+def phidp_from_kdp(da):
+    """Derive PHIDP from KDP.
+
+    Parameter
+    ---------
+    da : xarray.DataArray
+        array with specific differential phase data
+    winlen : int
+        size of window in range dimension
+
+    Return
+    ------
+    phi : xarray.DataArray
+        DataArray with differential phase values
+    """
+    dr = da.range.diff("range").median("range").values / 1000.0
+    print("range res [km]:", dr)
+    return (
+        xr.apply_ufunc(
+            integrate.cumulative_trapezoid,
+            da,
+            input_core_dims=[["range"]],
+            output_core_dims=[["range"]],
+            dask="parallelized",
+            kwargs=dict(dx=dr, initial=0.0, axis=-1),
+        )
+        * 2
+    )
+
+
 def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
     """This is the slow Python-based implementation (NOT RECOMMENDED).
 
@@ -688,99 +718,19 @@ def _unfold_phi_xarray(obj, **kwargs):
 
 
 @singledispatch
-def texture(data):
-    """Compute the texture of data.
-
-    Compute the texture of the data by comparing values with a 3x3 neighborhood
-    (based on :cite:`Gourley2007`). NaN values in the original array have
-    NaN textures.
-
-    Parameters
-    ----------
-    data : :class:`numpy:numpy.ndarray`
-        multidimensional array with shape (..., number of beams, number
-        of range bins)
-
-    Returns
-    -------
-    texture : :class:`numpy:numpy.ndarray`
-        array of textures with the same shape as data
-
-    """
-    # one-element wrap-around padding for last two axes
-    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode="wrap")
-
-    # set first and last range elements to NaN
-    x[..., 0] = np.nan
-    x[..., -1] = np.nan
-
-    # get neighbours using views into padded array
-    x1 = x[..., :-2, 1:-1]  # center:2
-    x2 = x[..., 1:-1, :-2]  # 4
-    x3 = x[..., 2:, 1:-1]  # 8
-    x4 = x[..., 1:-1, 2:]  # 6
-    x5 = x[..., :-2, :-2]  # 1
-    x6 = x[..., :-2, 2:]  # 3
-    x7 = x[..., 2:, 2:]  # 9
-    x8 = x[..., 2:, :-2]  # 7
-
-    # stack arrays
-    xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8])
-
-    # get count of valid neighbouring pixels
-    xa_valid_count = np.count_nonzero(~np.isnan(xa), axis=0)
-
-    # root mean of squared differences
-    rmsd = np.sqrt(np.nansum((xa - data) ** 2, axis=0) / xa_valid_count)
-
-    # reinforce that NaN values should have NaN textures
-    rmsd[np.isnan(data)] = np.nan
-
-    return rmsd
+def texture(obj):
+    util.warn(
+        "`wradlib.dp.texture` is deprecated. " "Use `wradlib.util.texture` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return util.texture(obj)
 
 
 @texture.register(xr.Dataset)
 @texture.register(xr.DataArray)
 def _texture_xarray(obj):
-    """Compute the texture of data.
-
-    Compute the texture of the data by comparing values with a 3x3 neighborhood
-    (based on :cite:`Gourley2007`). NaN values in the original array have
-    NaN textures.
-
-    Parameters
-    ----------
-    obj : :py:class:`xarray:xarray.DataArray`
-        DataArray
-
-    Returns
-    ------
-    texture : :py:class:`xarray:xarray.DataArray`
-        DataArray
-    """
-    dim0 = obj.wrl.util.dim0()
-    if isinstance(obj, xr.Dataset):
-        obj, keep = util.get_apply_ufunc_variables(obj, dim0)
-    out = xr.apply_ufunc(
-        texture,
-        obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
-    if isinstance(obj, xr.DataArray):
-        attrs = obj.attrs
-        standard_name = attrs["standard_name"].split("_")
-        standard_name.append("texture")
-        attrs["standard_name"] = "_".join(standard_name)
-        attrs["long_name"] = "Texture of " + attrs["long_name"]
-        attrs["units"] = "unitless"
-        out.attrs = attrs
-        out.name = obj.name + "_TEXTURE"
-    else:
-        out = xr.merge([out, keep])
-    return out
+    return util.texture(obj)
 
 
 @singledispatch
@@ -885,6 +835,13 @@ class DpMethods(util.XarrayMethods):
             return kdp_from_phidp(self, *args, **kwargs)
         else:
             return kdp_from_phidp(self._obj, *args, **kwargs)
+
+    @util.docstring(phidp_from_kdp)
+    def phidp_from_kdp(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return phidp_from_kdp(self, *args, **kwargs)
+        else:
+            return phidp_from_kdp(self._obj, *args, **kwargs)
 
     @util.docstring(_phidp_kdp_vulpiani_xarray)
     def phidp_kdp_vulpiani(self, *args, **kwargs):

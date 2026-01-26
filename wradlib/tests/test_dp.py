@@ -245,51 +245,10 @@ def test__fill_sweep(dp_data):
     dp._fill_sweep(dp_data.phidp_raw0, kind="linear")
 
 
-@pytest.fixture
-def texture_data():
-    @dataclass(init=False, repr=False, eq=False)
-    class TestTexture:
-        img = np.zeros((360, 10), dtype=np.float32)
-        img[2, 2] = 10  # isolated pixel
-        img[5, 6:8] = 10  # line
-        img[20, :] = 5  # spike
-        img[60:120, 2:7] = 11  # precip field
-
-        pixel = np.ones((3, 3)) * 3.5355339059327378
-        pixel[1, 1] = 10.0
-
-        line = np.ones((3, 4)) * 3.5355339059327378
-        line[:, 1:3] = 5.0
-        line[1, 1:3] = 9.354143466934854
-
-        spike = np.ones((3, 10)) * 3.0618621784789726
-        spike[1] = 4.330127018922194
-        spike[:, 0] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
-        spike[:, -1] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
-
-        rainfield = np.zeros((62, 7))
-        rainfield[:, 0:2] = 6.73609679265374
-        rainfield[:, -2:] = 6.73609679265374
-        rainfield[0:2, :] = 6.73609679265374
-        rainfield[-2:, :] = 6.73609679265374
-        rainfield[0, :2] = 3.8890872965260113, 5.5
-        rainfield[0, -2:] = 5.5, 3.8890872965260113
-        rainfield[-1, :2] = 3.8890872965260113, 5.5
-        rainfield[-1, -2:] = 5.5, 3.8890872965260113
-        rainfield[1, :2] = 5.5, 8.696263565463044
-        rainfield[1, -2:] = 8.696263565463044, 5.5
-        rainfield[-2, :2] = 5.5, 8.696263565463044
-        rainfield[-2, -2:] = 8.696263565463044, 5.5
-
-    yield TestTexture
-
-
-def test_texture(texture_data):
-    tex = dp.texture(texture_data.img)
-    np.testing.assert_array_equal(tex[1:4, 1:4], texture_data.pixel)
-    np.testing.assert_array_equal(tex[4:7, 5:9], texture_data.line)
-    np.testing.assert_array_equal(tex[19:22], texture_data.spike)
-    np.testing.assert_array_equal(tex[59:121, 1:8], texture_data.rainfield)
+def test_texture_deprecation():
+    with pytest.warns(DeprecationWarning):
+        data = np.zeros((360, 1000))
+        dp.texture(data)
 
 
 def test_depolarization():
@@ -335,11 +294,6 @@ def test_kdp_from_phidp_xarray(gamic_swp):
 
 def test_phidp_kdp_vulpiani_xarray(gamic_swp):
     gamic_swp.PHIDP.wrl.dp.phidp_kdp_vulpiani()
-
-
-def test_texture_xarray(gamic_swp):
-    gamic_swp.wrl.dp.texture()
-    gamic_swp.PHIDP.wrl.dp.texture()
 
 
 def test_unfold_phi_xarray(gamic_swp):
