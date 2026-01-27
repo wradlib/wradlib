@@ -330,8 +330,8 @@ def _unfold_phi_vulpiani_xarray(obj, **kwargs):
     kdp = kwargs.pop("kdp", None)
     if phidp is None or kdp is None:
         raise TypeError("Both `phidp` and `kdp` kwargs need to be given.")
-    phidp = util.get_dataarray(obj, phidp)
-    kdp = util.get_dataarray(obj, kdp)
+    phidp = util.get_dataarray(obj, phidp).copy(deep=True)
+    kdp = util.get_dataarray(obj, kdp).copy(deep=True)
     out = xr.apply_ufunc(
         unfold_phi_vulpiani,
         phidp,
@@ -343,6 +343,8 @@ def _unfold_phi_vulpiani_xarray(obj, **kwargs):
     )
     out.attrs = sweep_vars_mapping["PHIDP"]
     out.name = "PHIDP"
+
+    return out
 
 
 def _fill_sweep(dat, *, kind="nan_to_num", fill_value=0.0):
@@ -393,7 +395,7 @@ def kdp_from_phidp(phidp, *, winlen=7, dr=1.0, method="lanczos_conv", **kwargs):
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
     (the derivative of :math:`Phi_{DP}`) with Low-noise Lanczos differentiators
-    (`method='lanczos_conv'`). The results are very similar to the moving window
+    (`method='lanczos_conv'`, :cite:`Diekema2012`). The results are very similar to the moving window
     linear regression (`method='lstsq'`), but the former is *much* faster.
 
     The :math:`K_{DP}` retrieval will return NaNs in case at least one value
@@ -542,8 +544,7 @@ def phidp_from_kdp(da):
         DataArray with differential phase values
     """
     dr = da.range.diff("range").median("range").values / 1000.0
-    print("range res [km]:", dr)
-    return (
+    out = (
         xr.apply_ufunc(
             integrate.cumulative_trapezoid,
             da,
@@ -554,6 +555,9 @@ def phidp_from_kdp(da):
         )
         * 2
     )
+    out.attrs = sweep_vars_mapping["PHIDP"]
+    out.name = out.attrs["short_name"]
+    return out
 
 
 def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):

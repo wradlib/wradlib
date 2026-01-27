@@ -13,9 +13,9 @@ kernelspec:
 
 # Path-Integrated Attenuation
 
-This notebook demonstrates the core attenuation correction capabilities of {mod}`wradlib.atten` module, including the unconstrained [Hitschfeld et al., 1954](https://docs.wradlib.org/en/latest/bibliography.html#hitschfeld1954) approach dating back to 1954. It compares the different approaches to constrain the gate-by-gate retrieval of path-integrated attenuation.
+This notebook demonstrates the core attenuation correction capabilities of {mod}`wradlib.atten` module, including the unconstrained {cite}`Hitschfeld1954` approach dating back to 1954. It compares the different approaches to constrain the gate-by-gate retrieval of path-integrated attenuation.
 
-Rainfall-induced attenuation is a major source of underestimation for radar-based precipitation estimation at C-band and X-band. Unconstrained forward gate-by-gate correction is known to be inherently unstable and thus not suited for unsupervised quality control procedures. Ideally, reference measurements (e.g. from microwave links) should be used to constrain gate-by-gate procedures. However, such attenuation references are usually not available. {{wradlib}} provides a pragmatic approach to constrain gate-by-gate correction procedures, inspired by the work of [Kraemer et al., 2008](https://docs.wradlib.org/en/latest/bibliography.html#kraemer2008). It turned out that these procedures can effectively reduce the error introduced by attenuation, and, at the same time, minimize instability issues [(Jacobi et al., 2016)](https://docs.wradlib.org/en/latest/bibliography.html#jacobi2016).
+Rainfall-induced attenuation is a major source of underestimation for radar-based precipitation estimation at C-band and X-band. Unconstrained forward gate-by-gate correction is known to be inherently unstable and thus not suited for unsupervised quality control procedures. Ideally, reference measurements (e.g. from microwave links) should be used to constrain gate-by-gate procedures. However, such attenuation references are usually not available. {{wradlib}} provides a pragmatic approach to constrain gate-by-gate correction procedures, inspired by the work of  {cite}`Kraemer2008`. It turned out that these procedures can effectively reduce the error introduced by attenuation, and, at the same time, minimize instability issues {cite}`Jacobi2016`.
 
 ```{code-cell} python
 import numpy as np
@@ -69,7 +69,7 @@ ax.set_title("Raw Reflectivity along beams (dBZ)")
 
 ## 1. Hitschfeld and Bordan
 
-First, we examine the behaviour of the "classical" unconstrained forward correction which is typically referred to [Hitschfeld et al., 1954](https://docs.wradlib.org/en/latest/bibliography.html#hitschfeld1954), although Hitschfeld and Bordan themselves rejected this approach. The Path Integrated Attenuation (PIA) according to this approach can be obtained as follows:
+First, we examine the behaviour of the "classical" unconstrained forward correction which is typically referred to {cite}`Hitschfeld1954`, although Hitschfeld and Bordan themselves rejected this approach. The Path Integrated Attenuation (PIA) according to this approach can be obtained as follows:
 
 ```{code-cell} python
 pia_hibo = da.wrl.atten.correct_attenuation_hb(
@@ -102,7 +102,7 @@ Apparently, slight differences in the reflectivity profile can cause a dramatic 
 
 ## 2. Harrison
 
-[Harrison et al., 2000](https://docs.wradlib.org/en/latest/bibliography.html#harrison2000) suggested to simply cap PIA in case it would cause a correction of rainfall intensity by more than a factor of two. Depending on the parameters of the Z(R) relationship, that would correpond to PIA values between 4 and 5 dB (4.8 dB if we assume exponent b=1.6).
+{cite}`Harrison2000` suggested to simply cap PIA in case it would cause a correction of rainfall intensity by more than a factor of two. Depending on the parameters of the Z(R) relationship, that would correpond to PIA values between 4 and 5 dB (4.8 dB if we assume exponent b=1.6).
 
 One way to implement this approach would be the following:
 
@@ -132,7 +132,7 @@ plt.tight_layout()
 
 ## 3. Kraemer
 
-[Kraemer et al., 2008](https://docs.wradlib.org/en/latest/bibliography.html#kraemer2008) suggested to iteratively determine the power law parameters of the A(Z). In particular, the power law coefficient is interatively decreased until the attenuation correction does not lead to reflectivity values above a given threshold (Kraemer suggested 59 dBZ). Using {{wradlib}}, this would be called by using the function {mod}`~wradlib.atten.correct_attenuation_constrained` with a specific ``constraints`` argument:
+{cite}`Kraemer2008` suggested to iteratively determine the power law parameters of the A(Z). In particular, the power law coefficient is interatively decreased until the attenuation correction does not lead to reflectivity values above a given threshold (Kraemer suggested 59 dBZ). Using {{wradlib}}, this would be called by using the function {mod}`~wradlib.atten.correct_attenuation_constrained` with a specific ``constraints`` argument:
 
 ```{code-cell} python
 pia_kraemer = da.wrl.atten.correct_attenuation_constrained(
@@ -168,7 +168,7 @@ plt.tight_layout()
 
 ## 4. Modified Kraemer
 
-The function {mod}`~wradlib.atten.correct_attenuation_constrained` allows us to pass any kind of constraint function or lists of constraint functions via the argument ``constraints``. The arguments of these functions are passed via a nested list as argument ``constraint_args``. For example, [Jacobi et al., 2016](https://docs.wradlib.org/en/latest/bibliography.html#jacobi2016) suggested to constrain *both* the corrected reflectivity (by a maximum of 59 dBZ) *and* the resulting path-intgrated attenuation PIA (by a maximum of 20 dB):
+The function {meth}`~wradlib.atten.AttenMethods.correct_attenuation_constrained` allows us to pass any kind of constraint function or lists of constraint functions via the argument ``constraints``. The arguments of these functions are passed via a nested list as argument ``constraint_args``. For example, {cite}`Jacobi2016` suggested to constrain *both* the corrected reflectivity (by a maximum of 59 dBZ) *and* the resulting path-intgrated attenuation PIA (by a maximum of 20 dB):
 
 ```{code-cell} python
 pia_mkraemer = da.wrl.atten.correct_attenuation_constrained(
@@ -202,7 +202,7 @@ plt.tight_layout()
 
 ## Comparison
 
-Plotting all of the above methods ([Hitschfeld and Bordan](#hitschfeld-and-bordan), [Harrison](#harrison), [Kraemer](#kraemer), [Modified Kraemer](#modified-kraemer) allows for a better comparison of their behaviour. Please refer to [Jacobi et al., 2016](https://docs.wradlib.org/en/latest/bibliography.html#jacobi2016) for an in-depth discussion of this example.
+Plotting all of the above methods ([Hitschfeld and Bordan](#hitschfeld-and-bordan), [Harrison](#harrison), [Kraemer](#kraemer), [Modified Kraemer](#modified-kraemer) allows for a better comparison of their behaviour. Please refer to {cite}`Jacobi2016` for an in-depth discussion of this example.
 
 ```{code-cell} python
 pia_list = [pia_hibo, pia_harrison, pia_kraemer, pia_mkraemer]
