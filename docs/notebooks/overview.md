@@ -22,4 +22,5 @@ Attenuation <attenuation/attenuation>
 Visualization <visualisation/plotting>
 Interpolation <interpolation/interpolation>
 Composition <composition/max_reflectivity>
+Dual-Pol <dualpol/dualpol>
 ```

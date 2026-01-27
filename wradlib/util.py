@@ -25,6 +25,7 @@ __all__ = [
     "find_bbox_indices",
     "get_raster_origin",
     "calculate_polynomial",
+    "core_dims",
     "crop",
     "derivate",
     "despeckle",
@@ -1414,6 +1415,53 @@ def dim0(obj):
     return None
 
 
+def core_dims(obj):
+    """
+    Determine core dimensions for use with ``xarray.apply_ufunc``.
+
+    This helper inspects the object for a wradlib-style primary dimension
+    (e.g. ``"azimuth"``). If such a dimension exists, it is combined with
+    the ``"range"`` dimension to define the input and output core
+    dimensions. If no primary dimension is found, scalar core dimensions
+    are used.
+
+    Parameters
+    ----------
+    obj : xarray.DataArray
+        Input object whose dimensions are inspected.
+
+    Returns
+    -------
+    input_core_dims : list or None
+        Core dimensions for the input to ``xarray.apply_ufunc``.
+        Returns ``None`` if no primary dimension is detected.
+    output_core_dims : list of tuple
+        Core dimensions for the output of ``xarray.apply_ufunc``.
+
+    Notes
+    -----
+    This function is primarily intended for wradlib processing pipelines
+    where data may be organized either as 2D polar grids
+    (e.g. ``(azimuth, range)``) or as scalar values without a leading
+    angular dimension.
+
+    Examples
+    --------
+    >>> in_dims, out_dims = core_dims(da) #doctest: +SKIP
+    >>> xr.apply_ufunc(func, da,
+    ...                input_core_dims=in_dims,
+    ...                output_core_dims=out_dims) #doctest: +SKIP
+    """
+    dim0 = obj.wrl.util.dim0()
+    if dim0 is None:
+        input_core_dims = None
+        output_core_dims = ((),)
+    else:
+        input_core_dims = [[dim0, "range"]]
+        output_core_dims = [[dim0, "range"]]
+    return input_core_dims, output_core_dims
+
+
 def get_apply_ufunc_variables(obj, dim):
     if isinstance(dim, str):
         dims = {dim, "range"}
@@ -1520,6 +1568,102 @@ def aspect(obj):
     )
 
 
+@singledispatch
+def texture(data):
+    """Compute the texture of data.
+
+    Compute the texture of the data by comparing values with a 3x3 neighborhood
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        multidimensional array with shape (..., number of beams, number
+        of range bins)
+
+    Returns
+    -------
+    texture : :class:`numpy:numpy.ndarray`
+        array of textures with the same shape as data
+
+    """
+    # one-element wrap-around padding for last two axes
+    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode="wrap")
+
+    # set first and last range elements to NaN
+    x[..., 0] = np.nan
+    x[..., -1] = np.nan
+
+    # get neighbours using views into padded array
+    x1 = x[..., :-2, 1:-1]  # center:2
+    x2 = x[..., 1:-1, :-2]  # 4
+    x3 = x[..., 2:, 1:-1]  # 8
+    x4 = x[..., 1:-1, 2:]  # 6
+    x5 = x[..., :-2, :-2]  # 1
+    x6 = x[..., :-2, 2:]  # 3
+    x7 = x[..., 2:, 2:]  # 9
+    x8 = x[..., 2:, :-2]  # 7
+
+    # stack arrays
+    xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8])
+
+    # get count of valid neighbouring pixels
+    xa_valid_count = np.count_nonzero(~np.isnan(xa), axis=0)
+
+    # root mean of squared differences
+    rmsd = np.sqrt(np.nansum((xa - data) ** 2, axis=0) / xa_valid_count)
+
+    # reinforce that NaN values should have NaN textures
+    rmsd[np.isnan(data)] = np.nan
+
+    return rmsd
+
+
+@texture.register(xr.Dataset)
+@texture.register(xr.DataArray)
+def _texture_xarray(obj):
+    """Compute the texture of data.
+
+    Compute the texture of the data by comparing values with a 3x3 neighborhood
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        DataArray
+
+    Returns
+    ------
+    texture : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    if isinstance(obj, xr.Dataset):
+        obj, keep = get_apply_ufunc_variables(obj, dim0)
+    out = xr.apply_ufunc(
+        texture,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    if isinstance(obj, xr.DataArray):
+        attrs = obj.attrs
+        standard_name = attrs["standard_name"].split("_")
+        standard_name.append("texture")
+        attrs["standard_name"] = "_".join(standard_name)
+        attrs["long_name"] = "Texture of " + attrs["long_name"]
+        attrs["units"] = "unitless"
+        out.attrs = attrs
+        out.name = obj.name + "_TEXTURE"
+    else:
+        out = xr.merge([out, keep])
+    return out
+
+
 class XarrayMethods:
     """BaseClass to bind xarray methods to wradlib SubAccessor
 
@@ -1595,6 +1739,13 @@ class UtilMethods(XarrayMethods):
         else:
             return dim0(self._obj, *args, **kwargs)
 
+    @docstring(core_dims)
+    def core_dims(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return core_dims(self, *args, **kwargs)
+        else:
+            return core_dims(self._obj, *args, **kwargs)
+
     @docstring(crop)
     def crop(self, *args, **kwargs):
         if not isinstance(self, UtilMethods):
@@ -1608,6 +1759,13 @@ class UtilMethods(XarrayMethods):
             return aspect(self, *args, **kwargs)
         else:
             return aspect(self._obj, *args, **kwargs)
+
+    @docstring(_texture_xarray)
+    def texture(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return texture(self, *args, **kwargs)
+        else:
+            return texture(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
