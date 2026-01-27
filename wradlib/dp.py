@@ -3,7 +3,7 @@
 # Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-"""
+r"""
 Dual-Pol and Differential Phase
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -11,9 +11,9 @@ Overview
 --------
 
 This module provides algorithms to process polarimetric radar moments,
-namely the differential phase, :math:`Phi_{{DP}}`, and, based on successful
-:math:`Phi_{{DP}}` retrieval, also the specific differential phase,
-:math:`K_{{DP}}`.
+namely the differential phase, :math:`\Phi_{DP}`, and, based on successful
+:math:`\Phi_{DP}` retrieval, also the specific differential phase,
+:math:`K_{DP}`.
 Please note that the actual application of polarimetric moments is implemented
 in the corresponding wradlib modules, e.g.:
 
@@ -22,23 +22,24 @@ in the corresponding wradlib modules, e.g.:
     - attenuation correction (:func:`wradlib.atten.pia_from_kdp`)
     - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp_to_r`)
 
-Establishing a valid :math:`Phi_{{DP}}` profile for :math:`K_{{DP}}` retrieval
+Establishing a valid :math:`\Phi_{DP}` profile for :math:`K_{DP}` retrieval
 involves despeckling (:func:`wradlib.util.despeckle`), phase unfolding, and iterative
-retrieval of :math:`Phi_{{DP}}` form :math:`K_{{DP}}`.
+retrieval of :math:`\Phi_{DP}` form :math:`K_{DP}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
-put together in the function :func:`wradlib.dp._phidp_vulpiani`.
+put together in the function :func:`wradlib.dp.phidp_kdp_vulpiani`.
 
-Once a valid :math:`Phi_{{DP}}` profile has been established, the
-`kdp_from_phidp` functions can be used to retrieve :math:`K_{{DP}}`.
+Once a valid :math:`\Phi_{DP}` profile has been established, the
+:func:`wradlib.dp.kdp_from_phidp` function can be used to retrieve :math:`K_{DP}`.
 
 Please note that so far, the functions in this module were designed to increase
 performance. This was mainly achieved by allowing the simultaneous application
 of functions over multiple array dimensions. The only requirement to apply
 these function is that the **range dimension must be the last dimension** of
 all input arrays.
+"""
 
-
+_AUTOSUMMARY = r"""
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -55,7 +56,7 @@ __all__ = [
     "unfold_phi_vulpiani",
     "DpMethods",
 ]
-__doc__ = __doc__.format("\n   ".join(__all__))
+__doc__ = (__doc__ or "") + _AUTOSUMMARY.format("\n   ".join(__all__))
 
 from functools import singledispatch
 
@@ -71,18 +72,18 @@ from wradlib import trafo, util
 def phidp_kdp_vulpiani(
     obj, dr, *, ndespeckle=5, winlen=7, niter=2, copy=False, **kwargs
 ):
-    """Establish consistent :math:`Phi_{DP}` profiles from raw data.
+    r"""Establish consistent :math:`\Phi_{DP}` profiles from raw data.
 
     This approach is based on :cite:`Vulpiani2012` and involves a
-    two-step procedure of :math:`Phi_{DP}` reconstruction.
+    two-step procedure of :math:`\Phi_{DP}` reconstruction.
 
-    Processing of raw :math:`Phi_{DP}` data contains the following steps:
+    Processing of raw :math:`\Phi_{DP}` data contains the following steps:
 
         - Despeckle
         - Initial :math:`K_{DP}` estimation
         - Removal of artifacts
         - Phase unfolding
-        - :math:`Phi_{DP}` reconstruction using iterative estimation
+        - :math:`\Phi_{DP}` reconstruction using iterative estimation
           of :math:`K_{DP}`
 
     Parameters
@@ -98,10 +99,10 @@ def phidp_kdp_vulpiani(
         ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`,
         defaults to 7
     niter : int, optional
-        Number of iterations in which :math:`Phi_{DP}` is retrieved from
+        Number of iterations in which :math:`\Phi_{DP}` is retrieved from
         :math:`K_{DP}` and vice versa, defaults to 2.
     copy : bool, optional
-        if True, the original :math:`Phi_{DP}` array will remain unchanged,
+        if True, the original :math:`\Phi_{DP}` array will remain unchanged,
         defaults to False
 
     Keyword Arguments
@@ -117,7 +118,7 @@ def phidp_kdp_vulpiani(
     -------
     phidp : :class:`numpy:numpy.ndarray`
         array of shape (..., n azimuth angles, n range gates) reconstructed
-        :math:`Phi_{DP}`
+        :math:`\Phi_{DP}`
     kdp : :class:`numpy:numpy.ndarray`
         array of shape (..., n azimuth angles, n range gates)
         ``kdp`` estimate corresponding to ``phidp`` output
@@ -184,7 +185,7 @@ def phidp_kdp_vulpiani(
 
 @phidp_kdp_vulpiani.register(xr.DataArray)
 def _phidp_kdp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
-    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
+    r"""Retrieves :math:`K_{DP}` from :math:`\Phi_{DP}`.
 
     Parameter
     ---------
@@ -233,14 +234,14 @@ def _phidp_kdp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
 
 @singledispatch
 def unfold_phi_vulpiani(phidp, kdp, *, th=-20, winlen=7):
-    """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
+    r"""Alternative phase unfolding which completely relies on :math:`K_{DP}`.
 
     This unfolding should be used in oder to iteratively reconstruct
-    :math:`Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
+    :math:`\Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
 
     Note
     ----
-    :math:`Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
+    :math:`\Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
     From experience the window for calculation of :math:`K_{DP}` should not
     be too large to catch possible phase wraps.
 
@@ -291,14 +292,14 @@ def unfold_phi_vulpiani(phidp, kdp, *, th=-20, winlen=7):
 
 @unfold_phi_vulpiani.register(xr.Dataset)
 def _unfold_phi_vulpiani_xarray(obj, **kwargs):
-    """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
+    r"""Alternative phase unfolding which completely relies on :math:`K_{DP}`.
 
     This unfolding should be used in oder to iteratively reconstruct
-    :math:`Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
+    :math:`\Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
 
     Note
     ----
-    :math:`Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
+    :math:`\Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
     From experience the window for calculation of :math:`K_{DP}` should not
     be too large to catch possible phase wraps.
 
@@ -391,10 +392,10 @@ def _fill_sweep(dat, *, kind="nan_to_num", fill_value=0.0):
 
 @singledispatch
 def kdp_from_phidp(phidp, *, winlen=7, dr=1.0, method="lanczos_conv", **kwargs):
-    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
+    r"""Retrieves :math:`K_{DP}` from :math:`\Phi_{DP}`.
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
-    (the derivative of :math:`Phi_{DP}`) with Low-noise Lanczos differentiators
+    (the derivative of :math:`\Phi_{DP}`) with Low-noise Lanczos differentiators
     (`method='lanczos_conv'`, :cite:`Diekema2012`). The results are very similar to the moving window
     linear regression (`method='lstsq'`), but the former is *much* faster.
 
@@ -486,7 +487,7 @@ def kdp_from_phidp(phidp, *, winlen=7, dr=1.0, method="lanczos_conv", **kwargs):
 
 @kdp_from_phidp.register(xr.DataArray)
 def _kdp_from_phidp_xarray(obj, *, winlen=7, **kwargs):
-    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
+    r"""Retrieves :math:`K_{DP}` from :math:`\Phi_{DP}`.
 
     Parameter
     ---------
@@ -529,7 +530,7 @@ def _kdp_from_phidp_xarray(obj, *, winlen=7, **kwargs):
 
 
 def phidp_from_kdp(da):
-    """Derive PHIDP from KDP.
+    r"""Derive PHIDP from KDP.
 
     Parameter
     ---------
@@ -593,7 +594,7 @@ def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
 
 @singledispatch
 def unfold_phi(phidp, rho, *, width=5, copy=False):
-    """Unfolds differential phase by adjusting values that exceeded maximum \
+    r"""Unfolds differential phase by adjusting values that exceeded maximum \
     ambiguous range.
 
     Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
@@ -619,7 +620,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     -------
     phidp : :class:`numpy:numpy.ndarray`
         array of shape (..., n azimuth angles, n range gates) reconstructed
-        :math:`Phi_{DP}`
+        :math:`\Phi_{DP}`
     """
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
@@ -739,7 +740,7 @@ def _texture_xarray(obj):
 
 @singledispatch
 def depolarization(zdr, rho):
-    """Compute the depolarization ration.
+    r"""Compute the depolarization ration.
 
     Compute the depolarization ration using differential
     reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
@@ -767,7 +768,7 @@ def depolarization(zdr, rho):
 
 @depolarization.register(xr.Dataset)
 def _depolarization_xarray(obj: xr.Dataset, **kwargs):
-    """Compute the depolarization ration.
+    r"""Compute the depolarization ration.
 
     Compute the depolarization ration using differential
     reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
