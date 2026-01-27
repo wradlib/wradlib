@@ -724,6 +724,7 @@ def _unfold_phi_xarray(obj, **kwargs):
 
 @singledispatch
 def texture(obj):
+    """``wradlib.dp.texture`` is deprecated, use :func:`wradlib.util.texture` instead."""
     util.warn(
         "`wradlib.dp.texture` is deprecated. " "Use `wradlib.util.texture` instead.",
         DeprecationWarning,
@@ -735,6 +736,7 @@ def texture(obj):
 @texture.register(xr.Dataset)
 @texture.register(xr.DataArray)
 def _texture_xarray(obj):
+    """``wradlib.dp.DpMethods.texture`` is deprecated, use :meth:`wradlib.util.UtilMethods.texture` instead."""
     return util.texture(obj)
 
 
