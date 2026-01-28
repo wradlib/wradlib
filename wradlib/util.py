@@ -24,6 +24,7 @@ __all__ = [
     "filter_window_cartesian",
     "find_bbox_indices",
     "get_raster_origin",
+    "half_power_radius",
     "calculate_polynomial",
     "core_dims",
     "crop",
@@ -314,6 +315,7 @@ def trapezoid(data, x1, x2, x3, x4):
     return d
 
 
+@singledispatch
 def filter_window_polar(img, wsize, fun, rscale, *, random=False):
     """Apply a filter of an approximated square window of half size `fsize` \
     on a given polar image `img`.
@@ -367,6 +369,31 @@ def filter_window_polar(img, wsize, fun, rscale, *, random=False):
     return data_filtered
 
 
+@filter_window_polar.register(xr.DataArray)
+def _filter_window_polar_xarray(obj, **kwargs):
+    core_dims = obj.wrl.util.core_dims()
+    dr = obj.range.diff("range").median("range").values
+    kwargs.setdefault("rscale", dr)
+
+    def wrapper(img, **kwargs):
+        wsize = kwargs.pop("wsize")
+        fun = kwargs.pop("fun")
+        rscale = kwargs.pop("rscale")
+        return filter_window_polar(img, wsize, fun, rscale, **kwargs)
+
+    out = xr.apply_ufunc(
+        wrapper,
+        obj,
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = obj.attrs
+    return out
+
+
 def prob_round(x, *, prec=0):
     """Round the float number `x` to the lower or higher integer randomly
     following a binomial distribution
@@ -384,6 +411,7 @@ def prob_round(x, *, prec=0):
     return round_func / fixup
 
 
+@singledispatch
 def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     """Apply a filter of square window size `fsize` on a given \
     cartesian image `img`.
@@ -410,6 +438,33 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     size = np.fix(wsize / scale + 0.5).astype(int)
     data_filtered = fun(img, size, **kwargs)
     return data_filtered
+
+
+@filter_window_cartesian.register(xr.DataArray)
+def _filter_window_cartesian_xarray(obj, **kwargs):
+    core_dims = obj.wrl.util.core_dims()
+
+    ydiff = obj.y.diff("y")[0]
+    xdiff = obj.x.diff("x")[0]
+    kwargs.setdefault("scale", np.array(ydiff, xdiff))
+
+    def wrapper(img, **kwargs):
+        wsize = kwargs.pop("wsize")
+        fun = kwargs.pop("fun")
+        scale = kwargs.pop("scale")
+        return filter_window_cartesian(img, wsize, fun, scale, **kwargs)
+
+    out = xr.apply_ufunc(
+        wrapper,
+        obj,
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = obj.attrs
+    return out
 
 
 def roll2d_polar(img, shift=1, axis=0):
@@ -470,6 +525,7 @@ class UTC(dt.tzinfo):
         return dt.timedelta(0)
 
 
+@singledispatch
 def half_power_radius(r, bwhalf):
     """
     Half-power radius.
@@ -498,6 +554,21 @@ def half_power_radius(r, bwhalf):
     rhalf = (r * np.deg2rad(bwhalf)) / 2.0
 
     return rhalf
+
+
+@half_power_radius.register(xr.DataArray)
+@half_power_radius.register(xr.Dataset)
+def _half_power_radius_xarray(obj, bwhalf):
+    out = xr.apply_ufunc(
+        half_power_radius,
+        obj.coords["range"],
+        bwhalf,
+        input_core_dims=[["range"], []],
+        output_core_dims=[["range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    return out
 
 
 def get_raster_origin(coords):
@@ -820,9 +891,7 @@ def derivate(data, *, winlen=7, method="lanczos_conv", skipna=False, **kwargs):
     to estimate the derivative using Low-noise Lanczos differentiators.
     The equivalent method ('lanczos_dot') uses dot-vector sum product.
 
-    For further reading please see `Differentiation by integration using \
-    orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
-    and `Low-noise Lanczos differentiators \
+    For further reading please see :cite:`Diekema2012` and `Low-noise Lanczos differentiators \
     <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
 lanczos-low-noise-differentiators/>`_.
 
@@ -956,9 +1025,7 @@ def _derivate_xarray(obj, **kwargs):
     to estimate the derivative using Low-noise Lanczos differentiators.
     The equivalent method ('lanczos_dot') uses dot-vector sum product.
 
-    For further reading please see `Differentiation by integration using \
-    orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
-    and `Low-noise Lanczos differentiators \
+    For further reading please see :cite:`Diekema2012` and `Low-noise Lanczos differentiators \
     <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
 lanczos-low-noise-differentiators/>`_.
 
@@ -1454,9 +1521,16 @@ def core_dims(obj):
     """
     dim0 = obj.wrl.util.dim0()
     if dim0 is None:
-        input_core_dims = None
-        output_core_dims = ((),)
+        if all(dim in obj.dims and dim in obj.coords for dim in ["x", "y"]):
+            # cartesian coordinates
+            input_core_dims = [["y", "x"]]
+            output_core_dims = [["y", "x"]]
+        else:
+            # no specific coordinate set
+            input_core_dims = None
+            output_core_dims = ((),)
     else:
+        # polar coordinates
         input_core_dims = [[dim0, "range"]]
         output_core_dims = [[dim0, "range"]]
     return input_core_dims, output_core_dims
@@ -1766,6 +1840,27 @@ class UtilMethods(XarrayMethods):
             return texture(self, *args, **kwargs)
         else:
             return texture(self._obj, *args, **kwargs)
+
+    @docstring(filter_window_polar)
+    def filter_window_polar(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return filter_window_polar(self, *args, **kwargs)
+        else:
+            return filter_window_polar(self._obj, *args, **kwargs)
+
+    @docstring(filter_window_cartesian)
+    def filter_window_cartesian(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return filter_window_cartesian(self, *args, **kwargs)
+        else:
+            return filter_window_cartesian(self._obj, *args, **kwargs)
+
+    @docstring(half_power_radius)
+    def half_power_radius(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return half_power_radius(self, *args, **kwargs)
+        else:
+            return half_power_radius(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

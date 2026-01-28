@@ -129,6 +129,22 @@ def udata():
         img[5, 6:8] = 1  # line
         img[20, :] = 1  # spike
         img[9:12, 4:7] = 1  # precip field
+        img_arr = xr.DataArray(
+            img,
+            dims=["azimuth", "range"],
+            coords=[
+                np.linspace(0, 360, 36, endpoint=False),
+                np.linspace(0, 2500, 10, endpoint=False),
+            ],
+        )
+        img_rect = xr.DataArray(
+            img,
+            dims=["y", "x"],
+            coords=[
+                np.linspace(0, 9000, 36, endpoint=False),
+                np.linspace(0, 2500, 10, endpoint=False),
+            ],
+        )
 
     yield TestUtil
 
@@ -140,6 +156,15 @@ def test_filter_window_polar(udata):
     mean2 = util.filter_window_polar(
         udata.img.copy(), 300, "maximum", rscale, random=True
     )
+
+    np.random.seed(42)
+    meanx = udata.img_arr.copy(deep=True).wrl.util.filter_window_polar(
+        wsize=300, fun="maximum"
+    )
+    meanx2 = udata.img_arr.copy(deep=True).wrl.util.filter_window_polar(
+        wsize=300, fun="maximum", random=True
+    )
+
     correct = np.array(
         [
             [0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -223,10 +248,17 @@ def test_filter_window_polar(udata):
     )
     np.testing.assert_array_equal(mean, correct)
     np.testing.assert_array_equal(mean2, correct2)
+    np.testing.assert_array_equal(meanx.values, correct)
+    np.testing.assert_array_equal(meanx2.values, correct2)
 
 
 def test_half_power_radius():
-    hpr = util.half_power_radius(np.arange(0, 100000, 10000), 1.0)
+    rdata = np.arange(0, 100000, 10000)
+    rng = xr.DataArray(rdata, dims=["range"], coords=[rdata])
+    rng.name = "test"
+    hpr = util.half_power_radius(rdata, 1.0)
+    hprx = rng.wrl.util.half_power_radius(1.0)
+    hprx2 = rng.to_dataset().wrl.util.half_power_radius(1.0)
     res = np.array(
         [
             0.0,
@@ -242,6 +274,8 @@ def test_half_power_radius():
         ]
     )
     assert np.allclose(hpr, res)
+    assert np.allclose(hprx.values, res)
+    assert np.allclose(hprx2.values, res)
 
 
 def test_filter_window_cartesian(udata):
@@ -289,6 +323,11 @@ def test_filter_window_cartesian(udata):
         util.filter_window_cartesian(
             udata.img, 500.0, "maximum", np.array([250.0, 250])
         ),
+        correct,
+    )
+
+    assert np.allclose(
+        udata.img_rect.wrl.util.filter_window_cartesian(wsize=500.0, fun="maximum"),
         correct,
     )
 
