@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2025, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -38,6 +38,7 @@ from functools import singledispatch
 import numpy as np
 import xarray as xr
 from scipy import ndimage, stats
+from xradar.model import sweep_vars_mapping
 
 from wradlib import dp, util
 
@@ -159,7 +160,7 @@ def _filter_gabella_a_xarray(obj, **kwargs):
     --------
     See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     wsize = kwargs.pop("wsize", 5)
     tr1 = kwargs.pop("tr1", 6.0)
     out = xr.apply_ufunc(
@@ -167,8 +168,8 @@ def _filter_gabella_a_xarray(obj, **kwargs):
         obj,
         wsize,
         tr1,
-        input_core_dims=[[dim0, "range"], [], []],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0] + [[]] * 2,
+        output_core_dims=core_dims[1],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -266,12 +267,12 @@ def _filter_gabella_b_xarray(obj, **kwargs):
     --------
     See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     out = xr.apply_ufunc(
         filter_gabella_b,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -399,16 +400,17 @@ def _filter_gabella_xarray(obj, **kwargs):
     --------
     See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     out = xr.apply_ufunc(
         filter_gabella,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
+    out.attrs = sweep_vars_mapping["CMAP"]
     out.name = "filter_gabella"
     return out
 
@@ -552,12 +554,12 @@ def _histo_cut_xarray(obj, **kwargs):
     --------
     See :doc:`notebooks:notebooks/classify/histo_cut`.
     """
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     out = xr.apply_ufunc(
         histo_cut,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -874,13 +876,12 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     mom = [m for m in mom_all if m in dat]
     args = [obj[dat[m]] for m in mom]
     kwargs["mom"] = mom
-    dim0 = args[0].wrl.util.dim0()
-    input_core_dims = [[dim0, "range"]] * len(dat)
+    core_dims = args[0].wrl.util.core_dims()
     prob, mask = xr.apply_ufunc(
         _classify_echo_fuzzy_wrapper,
         *args,
-        input_core_dims=input_core_dims,
-        output_core_dims=[[dim0, "range"], [dim0, "range"]],
+        input_core_dims=core_dims[0] * len(dat),
+        output_core_dims=core_dims[0] * 2,
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
