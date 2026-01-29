@@ -2319,7 +2319,7 @@ def _map_coordinates_xarray(src, trg, **kwargs):
 
     src = util.crop(src, trg, pad=kwargs.get("order"))
 
-    indices = _cartesian_to_indices(src, trg, **kwargs)
+    indices = _cartesian_to_indices_xarray(src, trg, **kwargs)
 
     src_coords = kwargs.get("src_coords")
     sx = src_coords.x

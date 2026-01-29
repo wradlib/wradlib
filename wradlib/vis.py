@@ -998,7 +998,11 @@ def plot(
         ax = fig.add_subplot(ax, projection=crs)
 
     infer_intervals = kwargs.pop("infer_intervals", True)
-    xp, yp = ("x", "y") if da.sweep_mode == "azimuth_surveillance" else ("gr", "z")
+    xp, yp = (
+        (kwargs.pop("x", "x"), kwargs.pop("y", "y"))
+        if da.sweep_mode == "azimuth_surveillance"
+        else (kwargs.pop("gr", "gr"), kwargs.pop("z", "z"))
+    )
 
     # use cartopy, if available
     if hasattr(ax, "projection") and util.has_import(cartopy):

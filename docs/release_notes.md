@@ -15,6 +15,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * add xarray based functions {meth}`wradlib.atten.AttenMethods.correct_attenuation_hb`, {meth}`wradlib.atten.AttenMethods.correct_radome_attenuation_empirical` and {meth}`wradlib.atten.AttenMethods.pia_from_kdp` to atten-accessor {class}`wradlib.ipol.AttenMethods`, add tests and notebooks ({pull}`743`) by {at}`kmuehlbauer`
 * update xarray based function in {mod}`wradlib.dp`, add example notebooks for {mod}`wradlib.dp`, also update pia notebook and references ({pull}`744`) by {at}`kmuehlbauer`
 * update xarray based function in {mod}`wradlib.util`, add tests ({pull}`745`) by {at}`kmuehlbauer`
+* update xarray based function in {mod}`wradlib.classify`, add tests ({pull}`746`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
