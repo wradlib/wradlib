@@ -901,6 +901,7 @@ def _weight_array(data, weight):
     return w_array
 
 
+@singledispatch
 def filter_cloudtype(
     img,
     cloud,
@@ -959,6 +960,28 @@ def filter_cloudtype(
         noprecip = myfilter(noprecip, smoothing, "minimum", scale)
     clutter = noprecip & (img > thrs)
     return clutter
+
+
+@filter_cloudtype.register(xr.DataArray)
+def _filter_cloudtype_xarray(obj, cloud, **kwargs):
+    rscale = obj.range.diff("range").median().values
+    core_dims = obj.wrl.util.core_dims()
+    kwargs.setdefault("scale", rscale)
+
+    out = xr.apply_ufunc(
+        filter_cloudtype,
+        obj,
+        cloud,
+        input_core_dims=core_dims[0] * 2,
+        output_core_dims=core_dims[1],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = sweep_vars_mapping["CMAP"]
+    out.name = "filter_cloudtype"
+
+    return out
 
 
 @singledispatch
@@ -1514,6 +1537,13 @@ class ClassifyMethods(util.XarrayMethods):
             return filter_gabella_b(self, *args, **kwargs)
         else:
             return filter_gabella_b(self._obj, *args, **kwargs)
+
+    @util.docstring(_filter_cloudtype_xarray)
+    def filter_cloudtype(self, *args, **kwargs):
+        if not isinstance(self, ClassifyMethods):
+            return filter_cloudtype(self, *args, **kwargs)
+        else:
+            return filter_cloudtype(self._obj, *args, **kwargs)
 
     @util.docstring(_histo_cut_xarray)
     def histo_cut(self, *args, **kwargs):
