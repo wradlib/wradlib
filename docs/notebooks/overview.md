@@ -19,7 +19,7 @@ This section provides a collection of example code snippets to make users famili
 :hidden:
 :maxdepth: 3
 Attenuation <attenuation/attenuation>
-Echo Classification <classify/classify>
+Classification <classify/classify>
 Visualization <visualisation/plotting>
 Interpolation <interpolation/interpolation>
 Composition <composition/max_reflectivity>
