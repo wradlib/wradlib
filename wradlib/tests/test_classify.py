@@ -15,7 +15,18 @@ from . import get_wradlib_data_file, requires_gdal, requires_h5py, requires_netc
 
 
 def test_filter_gabella_a():
-    pass
+    filename = get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
+    data = np.loadtxt(filename)
+    clutter = classify.filter_gabella_a(data, wsize=5, tr1=6.0)
+
+    site = (47.875, 8.004, 1489.6)
+    r = np.arange(0, 128000, 1000) + 500
+    az = np.arange(0, 360, 1) + 0.5
+    fbg = georef.create_xarray_dataarray(data, r=r, phi=az, site=site)
+
+    clutterx = fbg.wrl.classify.filter_gabella_a(wsize=5, tr1=6.0)
+
+    np.testing.assert_array_equal(clutterx.values, clutter)
 
 
 def test_filter_window_distance():
@@ -97,12 +108,26 @@ def fuzzy_data():
     dat["dop"], attrs_dop = io.read_edge_netcdf(dopfile)
     dat["zdr"], attrs_zdr = io.read_edge_netcdf(zdrfile)
     dat["map"] = io.from_hdf5(mapfile)[0][0]
-    yield dat
+
+    datx = {k: (["azimuth", "range"], v) for k, v in dat.items()}
+    az, rng = dat["rho"].shape
+    swp = xr.Dataset(datx, coords={"azimuth": np.arange(az), "range": np.arange(rng)})
+    swp = swp.assign_coords(
+        dict(
+            longitude=7,
+            latitude=53,
+            altitude=0,
+            elevation=1,
+            sweep_mode="azimuth_surveillance",
+        )
+    )
+    yield dat, swp
 
 
 @requires_netcdf
 @requires_h5py
 def test_classify_echo_fuzzy(fuzzy_data):
+    dat, swp = fuzzy_data
     weights = {
         "zdr": 0.4,
         "rho": 0.4,
@@ -111,7 +136,7 @@ def test_classify_echo_fuzzy(fuzzy_data):
         "dop": 0.1,
         "map": 0.5,
     }
-    prob, mask = classify.classify_echo_fuzzy(fuzzy_data, weights=weights)
+    prob, mask = classify.classify_echo_fuzzy(dat, weights=weights)
     np.testing.assert_array_equal(
         prob[0, :4],
         np.array(
@@ -123,6 +148,12 @@ def test_classify_echo_fuzzy(fuzzy_data):
             ]
         ),
     )
+
+    moments = dict(rho="rho", phi="phi", dop="dop", zdr="zdr", map="map")
+    probx, maskx = swp.wrl.classify.classify_echo_fuzzy(moments, weights=weights)
+
+    np.testing.assert_array_almost_equal(probx.values, prob)
+    np.testing.assert_array_equal(maskx.values, mask)
 
 
 @pytest.fixture()
