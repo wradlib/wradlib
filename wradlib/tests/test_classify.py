@@ -25,6 +25,15 @@ def test_filter_window_distance():
     img[20, :] = 5  # spike
     img[9:12, 4:7] = 11  # precip field
     img[15:17, 5:7] = np.nan  # nans
+    img_arr = xr.DataArray(
+        img,
+        dims=["azimuth", "range"],
+        coords=[
+            np.linspace(0, 360, 36, endpoint=False),
+            np.linspace(0, 2500, 10, endpoint=False),
+        ],
+    )
+
     cl = img.copy()
     cl[img > 0] = True
     cl[img == 11] = False
@@ -36,17 +45,42 @@ def test_filter_window_distance():
     np.set_printoptions(precision=3)
     assert (result == cl).all()
 
+    similarx = img_arr.wrl.classify.filter_window_distance(fsize=300, tr1=4)
+    resultx = similarx < 0.3
+    assert (resultx.values == cl).all()
+
 
 def test_filter_gabella():
     filename = get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
     data = np.loadtxt(filename)
-    classify.filter_gabella(data, wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3)
+    clutter = classify.filter_gabella(
+        data, wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3
+    )
+
+    site = (47.875, 8.004, 1489.6)
+    r = np.arange(0, 128000, 1000) + 500
+    az = np.arange(0, 360, 1) + 0.5
+    fbg = georef.create_xarray_dataarray(data, r=r, phi=az, site=site)
+
+    clutterx = fbg.wrl.classify.filter_gabella(
+        wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3
+    )
+
+    np.testing.assert_array_equal(clutterx.values, clutter)
 
 
 def test_histo_cut():
     filename = get_wradlib_data_file("misc/annual_rainfall_fbg.gz")
     yearsum = np.loadtxt(filename)
-    classify.histo_cut(yearsum)
+    clutter = classify.histo_cut(yearsum)
+
+    site = (47.875, 8.004, 1489.6)
+    r = np.arange(0, 128000, 1000) + 500
+    az = np.arange(0, 360, 1) + 0.5
+    fbg = georef.create_xarray_dataarray(yearsum, r=r, phi=az, site=site)
+    clutterx = fbg.wrl.classify.histo_cut()
+
+    np.testing.assert_array_equal(clutterx.values, clutter)
 
 
 @pytest.fixture()
