@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2026, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -30,7 +30,7 @@ from functools import singledispatch
 
 import numpy as np
 import pyproj
-from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
+import xarray as xr
 
 from wradlib.georef import (
     add_raster_grid_mapping,
@@ -38,8 +38,8 @@ from wradlib.georef import (
     get_raster_coordinates,
     reproject,
 )
-from wradlib.ipol import RectBin
-from wradlib.util import XarrayMethods, docstring
+from wradlib.ipol import Nearest, RectBin
+from wradlib.util import XarrayMethods, docstring, get_apply_ufunc_variables
 
 
 def extract_circle(center, radius, coords):
@@ -108,7 +108,8 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
 
     Examples
     --------
-    See :ref:`notebooks:notebooks/basics/wradlib_workflow:gridding`.
+    See :ref:`togrid:togrid` and :ref:`notebooks:notebooks/basics/wradlib_workflow:gridding`.
+
     """
     # get indices to select the subgrid from the composite grid
     ix = extract_circle(center, radius, trg)
@@ -127,22 +128,35 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     return compose_grid
 
 
-@togrid.register(DataArray)
-@togrid.register(Dataset)
+@togrid.register(xr.DataArray)
+@togrid.register(xr.Dataset)
 def _togrid_xarray(obj, trg, *args, **kwargs):
     dim0 = obj.wrl.util.dim0()
     grid_xy = (
-        concat(broadcast(trg.y, trg.x), "xy")
+        xr.concat(xr.broadcast(trg.y, trg.x), "xy")
         .stack(npoints_cart=("y", "x"))
         .transpose(..., "xy")
     )
     xy = (
-        concat([obj.y, obj.x], "xy")
+        xr.concat([obj.y, obj.x], "xy")
         .stack(npoints_pol=(dim0, "range"))
         .transpose(..., "xy")
         .reset_coords(drop=True)
     )
-    obj = obj.stack(npoints_pol=(dim0, "range")).reset_coords(drop=True)
+
+    kwargs.setdefault("radius", obj.range.max().values)
+    kwargs.setdefault("center", (obj.y.mean().values, obj.x.mean().values))
+    kwargs.setdefault("interpol", Nearest)
+
+    # separate variables that will be applied with ufunc
+    if isinstance(obj, xr.Dataset):
+        obj_to_grid, keep = get_apply_ufunc_variables(obj, (dim0, "range"))
+        output_dtypes = [obj_to_grid[list(obj_to_grid.data_vars.keys())[0]].dtype]
+    else:
+        obj_to_grid = obj
+        output_dtypes = [obj_to_grid.dtype]
+
+    obj_stacked = obj_to_grid.stack(npoints_pol=(dim0, "range")).reset_coords(drop=True)
 
     def wrapper(obj, xy, grid_xy, **kwargs):
         radius = kwargs.get("radius")
@@ -151,9 +165,9 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
         out = togrid(xy, grid_xy, radius, center, obj, ipol)
         return out
 
-    out = apply_ufunc(
+    out = xr.apply_ufunc(
         wrapper,
-        obj,
+        obj_stacked,
         xy,
         grid_xy,
         input_core_dims=[
@@ -162,18 +176,22 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
             ["npoints_cart", "xy"],
         ],
         output_core_dims=[["npoints_cart"]],
+        output_dtypes=output_dtypes,
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
         on_missing_core_dim="drop",
     )
     out = out.unstack("npoints_cart")
-    out.attrs = obj.attrs
-    if isinstance(obj, DataArray):
+    if isinstance(obj, xr.Dataset):
+        out = xr.merge([out, keep])
+    else:
+        out.attrs = obj.attrs
         out.name = f"{obj.name}.togrid"
     return out
 
 
+@singledispatch
 def compose_ko(radargrids, qualitygrids):
     """Composes grids according to quality information using quality \
     information as a knockout criterion.
@@ -222,6 +240,28 @@ def compose_ko(radargrids, qualitygrids):
     return composite
 
 
+@compose_ko.register(xr.DataArray)
+def _compose_ko_xarray(radargrids, qualitygrids):
+    """
+    Xarray knockout composition:
+    select radar pixel with the highest quality per grid point.
+    """
+
+    # mask quality where radar data is missing
+    qualityinfo = qualitygrids.where(radargrids.notnull(), -np.inf)
+
+    # index of best radar per pixel
+    best = qualityinfo.argmax("radar")
+
+    # select radar value at that index
+    composite = radargrids.isel(radar=best)
+
+    composite.name = radargrids.name
+    composite.attrs = radargrids.attrs
+
+    return composite
+
+
 @singledispatch
 def compose_weighted(radargrids, qualitygrids):
     """Composes grids according to quality information using a weighted \
@@ -243,7 +283,7 @@ def compose_weighted(radargrids, qualitygrids):
 
     Examples
     --------
-    See :doc:`notebooks:notebooks/workflow/recipe1`.
+    See :ref:`togrid:togrid` and :doc:`notebooks:notebooks/workflow/recipe1`.
 
     See Also
     --------
@@ -264,7 +304,7 @@ def compose_weighted(radargrids, qualitygrids):
     return composite
 
 
-@compose_weighted.register(DataArray)
+@compose_weighted.register(xr.DataArray)
 def _compose_weighted_xarray(radargrids, qualitygrids):
     qualityinfo = qualitygrids.where(radargrids)
     qualityinfo /= qualityinfo.sum("radar", skipna=True)
@@ -359,6 +399,10 @@ def sweep_to_raster(sweep, raster, **kwargs):
     out : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
         raster image with transformed sweep values
 
+    Examples
+    --------
+    See :ref:`max_reflectivity:sweep-to-raster` and :doc:`notebooks:notebooks/workflow/recipe1`.
+
     """
     dim0 = sweep.wrl.util.dim0()
 
@@ -369,8 +413,8 @@ def sweep_to_raster(sweep, raster, **kwargs):
         transform = kwargs.pop("transform")
         return transform(obj, **kwargs)
 
-    with set_options(keep_attrs=True):
-        out = apply_ufunc(
+    with xr.set_options(keep_attrs=True):
+        out = xr.apply_ufunc(
             wrapper,
             sweep,
             input_core_dims=[[dim0, "range"]],
@@ -410,6 +454,13 @@ class CompMethods(XarrayMethods):
             return compose_weighted(self, *args, **kwargs)
         else:
             return compose_weighted(self._obj, *args, **kwargs)
+
+    @docstring(compose_ko)
+    def compose_ko(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return compose_ko(self, *args, **kwargs)
+        else:
+            return compose_ko(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
