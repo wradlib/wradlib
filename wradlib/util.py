@@ -384,8 +384,8 @@ def _filter_window_polar_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         wrapper,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -457,8 +457,8 @@ def _filter_window_cartesian_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         wrapper,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -1516,23 +1516,23 @@ def core_dims(obj):
     --------
     >>> in_dims, out_dims = core_dims(da) #doctest: +SKIP
     >>> xr.apply_ufunc(func, da,
-    ...                input_core_dims=in_dims,
-    ...                output_core_dims=out_dims) #doctest: +SKIP
+    ...                input_core_dims=[in_dims],
+    ...                output_core_dims=[out_dims]) #doctest: +SKIP
     """
     dim0 = obj.wrl.util.dim0()
     if dim0 is None:
         if all(dim in obj.dims and dim in obj.coords for dim in ["x", "y"]):
             # cartesian coordinates
-            input_core_dims = [["y", "x"]]
-            output_core_dims = [["y", "x"]]
+            input_core_dims = ["y", "x"]
+            output_core_dims = ["y", "x"]
         else:
             # no specific coordinate set
             input_core_dims = None
             output_core_dims = ((),)
     else:
         # polar coordinates
-        input_core_dims = [[dim0, "range"]]
-        output_core_dims = [[dim0, "range"]]
+        input_core_dims = [dim0, "range"]
+        output_core_dims = [dim0, "range"]
     return input_core_dims, output_core_dims
 
 

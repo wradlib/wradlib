@@ -99,8 +99,8 @@ def _z_to_r_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         z_to_r,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         kwargs=kwargs,
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -171,8 +171,8 @@ def _r_to_z_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         r_to_z,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         kwargs=kwargs,
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -369,13 +369,13 @@ def _z_to_r_enhanced_xarray(obj, **kwargs):
     """
     core_dims = obj.wrl.util.core_dims()
     shower = kwargs.setdefault("shower", True)
-    output_core_dims = core_dims[1]
+    output_core_dims = [core_dims[1]]
     if shower is True:
         output_core_dims *= 2
     out = xr.apply_ufunc(
         z_to_r_enhanced,
         obj,
-        input_core_dims=core_dims[0],
+        input_core_dims=[core_dims[0]],
         output_core_dims=output_core_dims,
         dask="parallelized",
         kwargs=kwargs,

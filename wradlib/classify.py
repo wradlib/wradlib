@@ -168,8 +168,8 @@ def _filter_gabella_a_xarray(obj, **kwargs):
         obj,
         wsize,
         tr1,
-        input_core_dims=core_dims[0] + [[]] * 2,
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]] + [[]] * 2,
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -271,8 +271,8 @@ def _filter_gabella_b_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         filter_gabella_b,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -404,8 +404,8 @@ def _filter_gabella_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         filter_gabella,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -558,8 +558,8 @@ def _histo_cut_xarray(obj, **kwargs):
     out = xr.apply_ufunc(
         histo_cut,
         obj,
-        input_core_dims=core_dims[0],
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]],
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -880,8 +880,8 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     prob, mask = xr.apply_ufunc(
         _classify_echo_fuzzy_wrapper,
         *args,
-        input_core_dims=core_dims[0] * len(dat),
-        output_core_dims=core_dims[0] * 2,
+        input_core_dims=[core_dims[0]] * len(dat),
+        output_core_dims=[core_dims[0]] * 2,
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -972,8 +972,8 @@ def _filter_cloudtype_xarray(obj, cloud, **kwargs):
         filter_cloudtype,
         obj,
         cloud,
-        input_core_dims=core_dims[0] * 2,
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]] * 2,
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -1149,14 +1149,23 @@ def msf_index_indep(msf, idp, obs):
 @msf_index_indep.register(xr.Dataset)
 def _msf_index_indep_xarray(msf, obs):
     msf = msf.to_array(dim="obs").transpose("hmc", ...)
-    dim0 = obs.wrl.util.dim0()
+    core_dims = obs.wrl.util.core_dims()
+    input_core_dims = [["hmc", "obs", "idp", "trapezoid"], ["idp"], core_dims[0]]
+    output_core_dims = [
+        [
+            "hmc",
+            "obs",
+        ]
+        + core_dims[1]
+        + ["trapezoid"]
+    ]
     out = xr.apply_ufunc(
         msf_index_indep,
         msf,
         msf.idp,
         obs,
-        input_core_dims=[["hmc", "obs", "idp", "trapezoid"], ["idp"], [dim0, "range"]],
-        output_core_dims=[["hmc", "obs", dim0, "range", "trapezoid"]],
+        input_core_dims=input_core_dims,
+        output_core_dims=output_core_dims,
         dask="parallelized",
         output_dtypes=["i4"],
     )
@@ -1235,7 +1244,7 @@ def fuzzyfi(msf, obs):
 
 @fuzzyfi.register(xr.DataArray)
 def _fuzzyfi_xarray(msf, hmc_ds, msf_obs_mapping):
-    dim0 = hmc_ds.wrl.util.dim0()
+    core_dims = hmc_ds.wrl.util.core_dims()
     rev = {v: k for k, v in msf_obs_mapping.items()}
     obs = hmc_ds[list(msf_obs_mapping.values())].rename(rev)
     obs = obs.to_array("obs")
@@ -1244,10 +1253,10 @@ def _fuzzyfi_xarray(msf, hmc_ds, msf_obs_mapping):
         msf,
         obs,
         input_core_dims=[
-            ["hmc", "obs", dim0, "range", "trapezoid"],
-            ["obs", dim0, "range"],
+            ["hmc", "obs"] + core_dims[0] + ["trapezoid"],
+            ["obs"] + core_dims[0],
         ],
-        output_core_dims=[["hmc", "obs", dim0, "range"]],
+        output_core_dims=[["hmc", "obs"] + core_dims[1]],
         output_dtypes=float,
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
@@ -1593,6 +1602,13 @@ class ClassifyMethods(util.XarrayMethods):
             return classify(self, *args, **kwargs)
         else:
             return classify(self._obj, *args, **kwargs)
+
+    @util.docstring(calculate_hmpr)
+    def calculate_hmpr(self, *args, **kwargs):
+        if not isinstance(self, ClassifyMethods):
+            return calculate_hmpr(self, *args, **kwargs)
+        else:
+            return calculate_hmpr(self._obj, *args, **kwargs)
 
     # @util.docstring(_trapezoid_xarray)
     # def trapezoid(self, *args, **kwargs):
