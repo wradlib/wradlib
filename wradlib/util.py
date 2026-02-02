@@ -1738,6 +1738,45 @@ def _texture_xarray(obj):
     return out
 
 
+def _iter_bboxes(*args):
+    """Yield bounding boxes (min_x, max_x, min_y, max_y) from inputs."""
+    for arg in args:
+        if isinstance(arg, xr.DataTree):
+            # check dataset at this tree node
+            if arg.ds is not None and arg.ds.dims:
+                yield from _iter_bboxes(arg.ds)
+
+            # iterate tree descendants
+            yield from _iter_bboxes(*arg.descendants)
+
+        else:
+            # dataset or dataarray object with coordinates
+            if {"x", "y"} <= set(arg.coords):
+                yield (
+                    arg.x.min().item(),
+                    arg.x.max().item(),
+                    arg.y.min().item(),
+                    arg.y.max().item(),
+                )
+
+
+def bbox(*args):
+    """Get the overall bounding box from a set of radar bin coordinates."""
+    boxes = list(_iter_bboxes(*args))
+    if not boxes:
+        return None
+
+    mins_x, maxs_x, mins_y, maxs_y = zip(*boxes, strict=True)
+    return np.array(
+        [
+            min(mins_x),
+            max(maxs_x),
+            min(mins_y),
+            max(maxs_y),
+        ]
+    )
+
+
 class XarrayMethods:
     """BaseClass to bind xarray methods to wradlib SubAccessor
 
@@ -1861,6 +1900,13 @@ class UtilMethods(XarrayMethods):
             return half_power_radius(self, *args, **kwargs)
         else:
             return half_power_radius(self._obj, *args, **kwargs)
+
+    @docstring(bbox)
+    def bbox(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return bbox(self, *args, **kwargs)
+        else:
+            return bbox(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
