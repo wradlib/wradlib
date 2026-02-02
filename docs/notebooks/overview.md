@@ -13,15 +13,15 @@ kernelspec:
 
 # Core Features
 
-This section provides a collection of example code snippets to make users familiar with $\omega radlib$ and weather radar data processing.
+This section provides a collection of example code snippets to make users familiar with {{wradlib}} and weather radar data processing.
 
 ```{toctree}
 :hidden:
 :maxdepth: 3
 Attenuation <attenuation/attenuation>
 Classification <classify/classify>
-Visualization <visualisation/plotting>
-Interpolation <interpolation/interpolation>
-Composition <composition/max_reflectivity>
+Composition <composition/composition>
 Dual-Pol <dualpol/dualpol>
+Interpolation <interpolation/interpolation>
+Visualization <visualisation/plotting>
 ```

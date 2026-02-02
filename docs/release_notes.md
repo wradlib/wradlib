@@ -16,6 +16,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * update xarray based function in {mod}`wradlib.dp`, add example notebooks for {mod}`wradlib.dp`, also update pia notebook and references ({pull}`744`) by {at}`kmuehlbauer`
 * update xarray based function in {mod}`wradlib.util`, add tests ({pull}`745`) by {at}`kmuehlbauer`
 * update xarray based function in {mod}`wradlib.classify`, add tests ({pull}`746`) by {at}`kmuehlbauer`
+* update xarray based functionality in {mod}`wradlib.comp`, add/rework notebooks ({pull}`748`) by {at}`kmuehlbauer`
 
 **Maintenance**
 

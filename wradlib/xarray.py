@@ -32,6 +32,7 @@ import wradlib
 
 @xr.register_dataarray_accessor("wrl")
 @xr.register_dataset_accessor("wrl")
+@xr.register_datatree_accessor("wrl")
 class WradlibXarrayAccessor:
     """Xarray Accessor for wradlib module functions"""
 
