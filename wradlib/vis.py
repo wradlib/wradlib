@@ -1035,7 +1035,6 @@ def plot(
 
     # claim xarray plot function and create plot
     plotfunc = getattr(da.plot, func)
-    print("QQ:", kwargs)
     pm = plotfunc(
         x=xp,
         y=yp,
