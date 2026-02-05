@@ -24,6 +24,7 @@ from xarray import DataArray, Dataset, apply_ufunc
 from xradar.model import get_altitude_attrs, get_range_attrs
 
 from wradlib import util
+from wradlib.georef import projection
 
 
 @singledispatch
@@ -253,7 +254,7 @@ def _site_distance_xarray(obj, **kwargs):
         DataArray
     """
     dim0 = obj.wrl.util.dim0()
-    binalt = bin_altitude(obj)
+    binalt = bin_altitude(obj, **kwargs)
     out = apply_ufunc(
         site_distance,
         binalt.range.expand_dims(dim={dim0: len(binalt.azimuth)}).assign_coords(
@@ -276,6 +277,59 @@ def _site_distance_xarray(obj, **kwargs):
     out.attrs = get_range_attrs()
     out.name = "site_distance"
     return out
+
+
+def ground_range(points, center, crs):
+    """
+    Compute ground range (distance along the Earth's surface) in meters
+    for a set of points relative to a center point.
+
+    Parameters
+    ----------
+    points : array_like
+        Nx2 array of coordinates [[x0, y0], [x1, y1], ...]
+        or [[lon, lat], ...] depending on CRS.
+    center : array_like
+        2-element array of center coordinates [x0, y0] or [lon0, lat0].
+    crs : pyproj.CRS or str
+        Coordinate reference system of the input points.
+
+    Returns
+    -------
+    gr : np.ndarray
+        Ground range (distance) in meters from center to each point.
+    """
+    crs = projection.ensure_crs(crs)
+    points = np.asarray(points)
+    center = np.asarray(center)
+
+    if crs.is_geographic:
+        # Geographic CRS: use geodesic
+        geod = crs.get_geod()
+        # pyproj.Geod.inv can accept arrays, flatten if necessary
+        lon0 = center[0]
+        lat0 = center[1]
+
+        lon = points[..., 0]
+        lat = points[..., 1]
+
+        lon_flat = lon.ravel()
+        lat_flat = lat.ravel()
+
+        _, _, gr = geod.inv(
+            np.full_like(lon_flat, lon0),
+            np.full_like(lat_flat, lat0),
+            lon_flat,
+            lat_flat,
+        )
+        return gr.reshape(lon.shape)  # in meters
+    else:
+        # Projected CRS: Euclidean distance in CRS units
+        dx = points[..., 0] - center[0]
+        dy = points[..., 1] - center[1]
+        # Assume CRS units are meters (check crs.axis_info[0].unit_name if needed)
+        gr = np.sqrt(dx**2 + dy**2)
+        return gr
 
 
 class GeorefMiscMethods:

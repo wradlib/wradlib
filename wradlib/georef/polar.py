@@ -119,6 +119,14 @@ def spherical_to_xyz(
         )
 
     aeqd = pyproj.CRS.from_string(projstr)
+    lon0_str = "E" if site[1] >= 0 else "W"
+    lat0_str = "N" if site[1] >= 0 else "S"
+    aeqd = pyproj.CRS.from_json_dict(
+        {
+            **aeqd.to_json_dict(),
+            "name": f"AEQD centered at {site[1]}{lat0_str} {site[0]}{lon0_str}",
+        }
+    )
 
     r = np.asanyarray(r)
     theta = np.asanyarray(theta)
@@ -1103,7 +1111,7 @@ def georeference(obj, **kwargs):
     center = np.mean(xyz[..., 0, :], axis=ax)
 
     # calculate ground range
-    gr = np.sqrt((xyz[..., 0] - center[0]) ** 2 + (xyz[..., 1] - center[1]) ** 2)
+    gr = misc.ground_range(xyz, center, trg_crs)
 
     # dimension handling
     dim0 = obj["azimuth"].dims[-1]
@@ -1124,10 +1132,13 @@ def georeference(obj, **kwargs):
     dimlist += ["range"]
 
     # add xyz, ground range coordinates
-    x_attrs = {"standard_name": "east_west_distance_from_radar", "units": "meters"}
-    y_attrs = {"standard_name": "north_south_distance_from_radar", "units": "meters"}
-    z_attrs = {"standard_name": "height_above_ground", "units": "meters"}
-    gr_attrs = {"standard_name": "distance_from_radar", "units": "meters"}
+    cf_coords = trg_crs.cs_to_cf()
+    cf_by_axis = {c["axis"]: c for c in cf_coords}
+    x_attrs = cf_by_axis.get("X")
+    y_attrs = cf_by_axis.get("Y")
+    unit = x_attrs["units"]
+    z_attrs = {"standard_name": "height_above_ground", "units": unit}
+    gr_attrs = {"standard_name": "distance_from_radar", "units": unit}
     obj.coords["x"] = (dimlist, xyz[..., 0], x_attrs)
     obj.coords["y"] = (dimlist, xyz[..., 1], y_attrs)
     obj.coords["z"] = (dimlist, xyz[..., 2], z_attrs)
