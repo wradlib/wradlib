@@ -811,8 +811,8 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
         depolarization,
         zdr,
         rho,
-        input_core_dims=core_dims[0] * 2,
-        output_core_dims=core_dims[1],
+        input_core_dims=[core_dims[0]] * 2,
+        output_core_dims=[core_dims[1]],
         dask="parallelized",
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )

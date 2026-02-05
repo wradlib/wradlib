@@ -30,7 +30,7 @@ from osgeo import osr
 
 The cloud data from MSG3 satellite has some issue with the georeferencing. We need to apply a little fix, correct for that. The fix just adds the proper projection and coordinate objects to the dataset.
 
-```{code-cell} ipython3
+```{code-cell} python3
 import warnings
 import pyproj
 from pyproj import CRS
@@ -107,7 +107,7 @@ display(vol)
 
 ## Construct collocated satellite data
 
-Here we interpolate the satellite data into the radar grid (nearest neighbour) and assign it to the volume. See {meth}`wradlib.ipol.IpolMethods.interpolate` and {doc}`../interpolation/cartesian_to_polar`.
+Here we interpolate the satellite data into the radar grid (nearest neighbour) and assign it to the volume. See {meth}`wradlib.ipol.IpolMethods.interpolate` and {doc}`../../interpolation/cartesian_to_polar`.
 
 ```{code-cell} python3
 ct = sat.isel(band=0).CT.wrl.ipol.interpolate(vol, method="map_coordinates_nearest")

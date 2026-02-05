@@ -853,6 +853,7 @@ def _plot_cg(
 
     # create our own colorbar for curvelinear grids
     if add_colorbar is not False:
+        label = cbar_kwargs.get("label", None)
         cbar = plt.colorbar(pm, ax=[ax, caax, paax], **cbar_kwargs)
 
         def _get_label(da):
@@ -869,7 +870,8 @@ def _plot_cg(
 
         caax.set_xlabel(_get_label(xl))
         caax.set_ylabel(_get_label(yl))
-        cbar.set_label(_get_label(da))
+        if label is None:
+            cbar.set_label(_get_label(da))
 
     # apply box aspect for PPI
     if da.sweep_mode == "azimuth_surveillance":

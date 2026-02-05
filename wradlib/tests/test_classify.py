@@ -344,7 +344,7 @@ def test_calculate_hmpr(radar_type):
         cent_ave = cent.sel(hmc=htype).ave
         da = xr.DataArray([20], name="test", coords={"obs": ["TEMP"]})
         cent_ave = xr.concat([cent_ave, da], dim="obs").drop_vars("hmc")
-        out = classify.calculate_hmpr(cent_ave, weights.weights, cent)
+        out = cent_ave.wrl.classify.calculate_hmpr(weights.weights, cent)
         np.testing.assert_allclose(out.sum("hmc").values, np.array(1.0))
 
 
