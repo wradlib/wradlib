@@ -22,6 +22,7 @@ Attenuation <attenuation/attenuation>
 Classification <classify/classify>
 Composition <composition/composition>
 Dual-Pol <dualpol/dualpol>
+Georeferencing <georeferencing/georeferencing>
 Interpolation <interpolation/interpolation>
 Visualization <visualisation/plotting>
 ```
