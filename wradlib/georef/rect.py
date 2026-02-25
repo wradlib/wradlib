@@ -157,6 +157,11 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     }
 
     mode = kwargs.get("mode", "radolan")
+    if mode not in {"edge", "center", "radolan"}:
+        raise ValueError(
+            f"mode must be one of 'edge', 'center', 'radolan' got {mode!r}"
+        )
+
     crs = kwargs.get("crs", None)
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
@@ -358,7 +363,7 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
         else:
             # create radolan projection osr object
             if crs is None:
-                crs = projection.create_osr("dwd-radolan")
+                crs = projection.create_crs("dwd-radolan")
 
             # create wgs84 projection osr object
             crs_wgs84 = projection.get_default_projection()

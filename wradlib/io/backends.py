@@ -24,6 +24,7 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import io
+import numbers
 
 import numpy as np
 from xarray.backends.common import AbstractDataStore, BackendArray, BackendEntrypoint
@@ -103,7 +104,7 @@ class RadolanDataStore(AbstractDataStore):
     def open_store_variable(self, name, var):
         encoding = {"source": self._filename}
         vdata = var.data
-        if isinstance(vdata, np.ndarray):
+        if isinstance(vdata, (np.ndarray, np.generic, numbers.Number)):
             data = vdata
         else:
             data = indexing.LazilyOuterIndexedArray(

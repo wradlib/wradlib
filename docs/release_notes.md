@@ -7,7 +7,7 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development Version (unreleased)
+## Version 2.7
 
 **New features**
 
@@ -18,6 +18,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * update xarray based function in {mod}`wradlib.classify`, add tests ({pull}`746`) by {at}`kmuehlbauer`
 * update xarray based functionality in {mod}`wradlib.comp`, add/rework notebooks ({pull}`748`) by {at}`kmuehlbauer`
 * update xarray based function in {mod}`wradlib.zr`, add tests ({pull}`749`) by {at}`kmuehlbauer`
+* update wgs84-ellipsoid handling for RADOLAN ({pull}`754`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
