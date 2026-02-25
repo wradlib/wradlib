@@ -1264,7 +1264,13 @@ class _radolan_file:
         self.dimensions["y"] = self.attrs["nrow"]
         self.dimensions["x"] = self.attrs["ncol"]
         dims = " ".join(list(self.dimensions.keys()))
-        pattrs.update({"long_name": self.product, "coordinates": f"time {dims}"})
+        pattrs.update(
+            {
+                "long_name": self.product,
+                "coordinates": f"time {dims}",
+                "grid_mapping": "crs",
+            }
+        )
 
         data_var = WradlibVariable(self.dimensions, data=self, attrs=pattrs)
 
@@ -1290,6 +1296,9 @@ class _radolan_file:
             crs = projection.create_crs("dwd-radolan-wgs84")
         else:
             crs = projection.create_crs("dwd-radolan-sphere")
+
+        cf = crs.to_cf()
+        cf["crs_wkt"] = crs.to_wkt()
 
         coords_kwargs = {}
         if self.attrs.get("maxheight", False):
@@ -1338,10 +1347,7 @@ class _radolan_file:
             self._variables.update({"z": z_var})
 
         self._variables.update(
-            {
-                "y": y_var,
-                "x": x_var,
-            }
+            {"y": y_var, "x": x_var, "crs": WradlibVariable((), data=0, attrs=cf)}
         )
 
         if pred_time is not None:
