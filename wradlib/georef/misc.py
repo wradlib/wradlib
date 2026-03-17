@@ -77,7 +77,7 @@ def _apply_ufunc_wrapper(obj, func, **kwargs):
             range=obj.range
         ),
         obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
+        input_core_dims=[[dim0, "range"], [dim0, "range"], []],
         output_core_dims=[[dim0, "range"]],
         dask="parallelized",
         kwargs=kwargs,

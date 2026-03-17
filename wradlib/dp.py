@@ -219,7 +219,7 @@ def _phidp_kdp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
         phidp_kdp_vulpiani,
         obj,
         dr,
-        input_core_dims=[[dim0, "range"], [None]],
+        input_core_dims=[[dim0, "range"], []],
         output_core_dims=[[dim0, "range"], [dim0, "range"]],
         dask="parallelized",
         kwargs=dict(winlen=winlen, **kwargs),
