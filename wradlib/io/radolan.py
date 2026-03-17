@@ -957,12 +957,13 @@ def _get_radolan_product_attributes(attrs):
         "EZ",
         "YW",
         "RV",
-        "RE",
         "RQ",
     ]:
         pattrs.update(radolan["RR"])
         scale_factor = np.float32(precision * 3600 / interval)
         pattrs.update({"scale_factor": scale_factor})
+    elif product in ["RE"]:
+        pattrs.update(radolan["RE"])
     elif product in [
         "SQ",
         "SH",
@@ -1025,6 +1026,16 @@ radolan = {
         "standard_name": "rainfall_amount",
         "long_name": "rainfall_amount",
         "unit": "mm",
+    },
+    "RE": {
+        "scale_factor": np.float32(0.001),
+        "add_offset": np.float32(0),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(4095),
+        "_FillValue": np.array([2490, 2500, 65535], dtype=np.int32),
+        "standard_name": "solid_fraction_of_precipitation",
+        "long_name": "solid_fraction_of_precipitation",
+        "unit": "1",
     },
     "PG": {
         "valid_min": np.int32(0),
