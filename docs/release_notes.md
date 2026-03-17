@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.7.1
+
+**Bugfixes**
+
+* use [] instead of [None] in calls to apply_ufunc for core_dims ({pull}`756`) by {at}`kmuehlbauer`
+
 ## Version 2.7
 
 **New features**
