@@ -395,12 +395,10 @@ def test_read_gpm():
 def test_read_trmm():
     # define TRMM data sets
     trmm_2a23_file = get_wradlib_data_file(
-        "trmm/2A-CS-151E24S154E30S.TRMM.PR.2A23.20100206-"
-        "S111425-E111526.069662.7.HDF"
+        "trmm/2A-CS-151E24S154E30S.TRMM.PR.2A23.20100206-S111425-E111526.069662.7.HDF"
     )
     trmm_2a25_file = get_wradlib_data_file(
-        "trmm/2A-CS-151E24S154E30S.TRMM.PR.2A25.20100206-"
-        "S111425-E111526.069662.7.HDF"
+        "trmm/2A-CS-151E24S154E30S.TRMM.PR.2A25.20100206-S111425-E111526.069662.7.HDF"
     )
 
     filename2 = "hdf5/IDR66_20141206_094829.vol.h5"
@@ -1115,6 +1113,18 @@ def test_open_radolan_dataset():
     with gzip.open(rw_file) as fh:
         data = io.radolan.open_radolan_dataset(fh)
         assert data.RW.shape == (900, 900)
+
+    filename = "radolan/radvor/RE2210180700_000.gz"
+    re_file = get_wradlib_data_file(filename)
+    data = io.radolan.open_radolan_dataset(re_file)
+    assert data.RE.shape == (900, 900)
+    assert data.sizes == {"y": 900, "x": 900, "time": 1, "prediction_time": 1}
+    assert data.RE.dims == ("y", "x")
+    assert data.RE.attrs["standard_name"] == "solid_fraction_of_precipitation"
+    assert data.RE.attrs["unit"] == "1"
+    assert data.time.values == np.datetime64("2022-10-18T07:00:00.000000000")
+    re_values = data.RE.values
+    assert np.all(np.isnan(re_values) | ((re_values >= 0) & (re_values <= 1)))
 
     filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
     rx_file = get_wradlib_data_file(filename)
