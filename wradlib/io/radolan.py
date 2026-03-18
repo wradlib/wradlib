@@ -963,7 +963,7 @@ def _get_radolan_product_attributes(attrs):
         scale_factor = np.float32(precision * 3600 / interval)
         pattrs.update({"scale_factor": scale_factor})
     elif product in ["RE"]:
-        pattrs.update(radolan["RE"], scale_factor=precision)
+        pattrs.update(radolan["RE"], scale_factor=np.float32(precision))
     elif product in [
         "SQ",
         "SH",
