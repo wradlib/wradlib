@@ -1365,7 +1365,9 @@ class _radolan_file:
 
         if self._ancillary:
             for a in self._ancillary:
-                ancvar = WradlibVariable(self.dimensions, data=self, attrs={})
+                ancvar = WradlibVariable(
+                    self.dimensions, data=self, attrs=self._get_ancillary_attrs(a)
+                )
                 self._variables[a] = ancvar
 
         # remove unneeded global attributes
@@ -1406,6 +1408,17 @@ class _radolan_file:
             )
 
         return tuple(anc)
+
+    def _get_ancillary_attrs(self, ancillary):
+        if self.product == "RE" and ancillary == "secondary":
+            return {
+                "long_name": "hail_flag",
+                "comment": "Boolean mask from RADOLAN bit 13: true means hail.",
+                "flag_values": [False, True],
+                "flag_meanings": "no_hail hail",
+                "unit": "1",
+            }
+        return {}
 
     def close(self):
         """Closes the Radolan file."""
