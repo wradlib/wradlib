@@ -7,6 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.8.0
+
+**New features**
+
+* add attrs specific to Radolan RE product ({issue}`753`, {pull}`757`) by {at}`guidara`
+* add attrs for Radolan RE product secondary variable (hail flag) ({issue}`753`, {pull}`758`) by {at}`guidara`
+
 ## Version 2.7.1
 
 **Bugfixes**
