@@ -1100,56 +1100,58 @@ def test__radolan_file(file_or_filelike):
         assert radfile.data["RW"].shape == (900, 900)
 
 
-class Test_open_radolan_dataset:
-    def test_rw(self):
-        filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
-        rw_file = get_wradlib_data_file(filename)
+def test_open_radolan_dataset_rw():
+    filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
+    rw_file = get_wradlib_data_file(filename)
 
-        # test for complete file
-        data = io.radolan.open_radolan_dataset(rw_file)
+    # test for complete file
+    data = io.radolan.open_radolan_dataset(rw_file)
+    assert data.RW.shape == (900, 900)
+
+    # Do the same for the case where a file handle is passed
+    # instead of a file name
+    with gzip.open(rw_file) as fh:
+        data = io.radolan.open_radolan_dataset(fh)
         assert data.RW.shape == (900, 900)
 
-        # Do the same for the case where a file handle is passed
-        # instead of a file name
-        with gzip.open(rw_file) as fh:
-            data = io.radolan.open_radolan_dataset(fh)
-            assert data.RW.shape == (900, 900)
 
-    def test_re(self):
-        filename = "radolan/radvor/RE2210180700_000.gz"
-        re_file = get_wradlib_data_file(filename)
-        data = io.radolan.open_radolan_dataset(re_file, ancillary=True)
-        assert data.sizes == {"y": 900, "x": 900, "time": 1, "prediction_time": 1}
-        assert data.time.values == np.datetime64("2022-10-18T07:00:00.000000000")
+def test_open_radolan_dataset_re():
+    filename = "radolan/radvor/RE2210180700_000.gz"
+    re_file = get_wradlib_data_file(filename)
+    data = io.radolan.open_radolan_dataset(re_file, ancillary=True)
+    assert data.sizes == {"y": 900, "x": 900, "time": 1, "prediction_time": 1}
+    assert data.time.values == np.datetime64("2022-10-18T07:00:00.000000000")
 
-        assert data.RE.shape == (900, 900)
-        assert data.RE.dims == ("y", "x")
-        assert data.RE.attrs["standard_name"] == "solid_fraction_of_precipitation"
-        assert data.RE.attrs["unit"] == "1"
-        re_values = data.RE.values
-        assert np.all(np.isnan(re_values) | ((re_values >= 0) & (re_values <= 1)))
+    assert data.RE.shape == (900, 900)
+    assert data.RE.dims == ("y", "x")
+    assert data.RE.attrs["standard_name"] == "solid_fraction_of_precipitation"
+    assert data.RE.attrs["unit"] == "1"
+    re_values = data.RE.values
+    assert np.all(np.isnan(re_values) | ((re_values >= 0) & (re_values <= 1)))
 
-        assert data.secondary.shape == (900, 900)
-        assert data.secondary.dims == ("y", "x")
-        assert data.secondary.attrs["long_name"] == "hail_flag"
-        assert data.secondary.attrs["unit"] == "1"
-        hail_flag_values = data.secondary.values
-        assert np.isdtype(hail_flag_values.dtype, np.bool_)
+    assert data.secondary.shape == (900, 900)
+    assert data.secondary.dims == ("y", "x")
+    assert data.secondary.attrs["long_name"] == "hail_flag"
+    assert data.secondary.attrs["unit"] == "1"
+    hail_flag_values = data.secondary.values
+    assert np.isdtype(hail_flag_values.dtype, np.bool_)
 
-    def test_rx(self):
-        filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
-        rx_file = get_wradlib_data_file(filename)
-        data = io.radolan.open_radolan_dataset(rx_file)
-        assert data.RX.shape == (900, 900)
-        assert data.sizes == {"x": 900, "y": 900, "time": 1}
-        assert data.RX.dims == ("y", "x")
-        assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
 
-    def test_pc(self):
-        filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
-        pc_file = get_wradlib_data_file(filename)
-        data = io.radolan.open_radolan_dataset(pc_file)
-        assert data.PG.shape == (460, 460)
+def test_open_radolan_dataset_rx():
+    filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
+    rx_file = get_wradlib_data_file(filename)
+    data = io.radolan.open_radolan_dataset(rx_file)
+    assert data.RX.shape == (900, 900)
+    assert data.sizes == {"x": 900, "y": 900, "time": 1}
+    assert data.RX.dims == ("y", "x")
+    assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
+
+
+def test_open_radolan_dataset_pc():
+    filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
+    pc_file = get_wradlib_data_file(filename)
+    data = io.radolan.open_radolan_dataset(pc_file)
+    assert data.PG.shape == (460, 460)
 
 
 def test_open_radolan_as_groups():
