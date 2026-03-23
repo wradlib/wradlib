@@ -4,6 +4,9 @@ build:
   os: ubuntu-24.04
   tools:
     python: mambaforge-latest
+  jobs:
+    pre_install:
+      - git update-index --assume-unchanged ci/requirements/readthedocs.yml docs/conf.py
 
 conda:
   environment: ci/requirements/readthedocs.yml
