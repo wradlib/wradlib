@@ -68,7 +68,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: >-
             bash
@@ -126,7 +126,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: >-
             bash
@@ -185,7 +185,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: >-
             bash
@@ -242,7 +242,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: bash
           environment-name: wradlib-tests
@@ -299,7 +299,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
@@ -369,7 +369,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
