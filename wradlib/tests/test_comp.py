@@ -317,7 +317,7 @@ def test_sweep_to_raster():
 
     filename = DATASETS.fetch("71_20181220_060628.pvol.h5")
     datatree = xd.io.open_odim_datatree(filename)
-    sweep = datatree["sweep_0"].ds
+    sweep = datatree["sweep_0"].to_dataset(inherit="all_coords")
 
     location = (sweep.longitude.values, sweep.latitude.values)
     crs = georef.get_radar_projection(location)

@@ -84,7 +84,7 @@ for p, name in enumerate(["projected", "geographic"]):
     metadata = xd.model.required_sweep_metadata_vars
     rasters_radar = []
     for volume in volumes:
-        sweep = volume[f"sweep_{swp}"].to_dataset()
+        sweep = volume[f"sweep_{swp}"].to_dataset(inherit="all_coords")
         sweep = sweep[["DBZH"] + list(metadata)]
         sweep = sweep.sel(range=slice(0, 200e3))
         sweep = sweep.wrl.georef.georeference()
