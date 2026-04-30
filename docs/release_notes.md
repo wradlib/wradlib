@@ -16,6 +16,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **Bugfixes**
 
 * align with xradar/xarray datatree coordinate inheritance, update dependency pinnings ({pull}`762`) by {at}`kmuehlbauer`
+* correct earthdata srtm download endpoint, use data.lpdaac.earthdatacloud.nasa.gov ({pull}`763`) by {at}`kmuehlbauer`
 
 ## Version 2.8.0
 
