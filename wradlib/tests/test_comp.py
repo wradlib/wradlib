@@ -263,7 +263,7 @@ def test_sweep_to_raster_geographic():
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
     filename = get_wradlib_data_file(filename)
     sweep = open_odim_datatree(filename)
-    sweep = sweep["sweep_0"].ds
+    sweep = sweep["sweep_0"].to_dataset(inherit="all_coords")
     sweep = xd.georeference.get_x_y_z(sweep)
 
     lon = float(sweep.longitude.values)
