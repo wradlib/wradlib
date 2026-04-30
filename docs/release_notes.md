@@ -7,6 +7,16 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**Maintenance**
+
+* set minimum Python version in environments and CI to 3.11 set main Python version to 3.14 ({pull}`762`) by {at}`kmuehlbauer`
+
+**Bugfixes**
+
+* align with xradar/xarray datatree coordinate inheritance, update dependency pinnings ({pull}`762`) by {at}`kmuehlbauer`
+
 ## Version 2.8.0
 
 **New features**
