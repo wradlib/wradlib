@@ -4,19 +4,18 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.19.1
+    jupytext_version: 1.18.1
   main_language: python
 kernelspec:
-  name: conda-env-xr_312_np2-py
-  display_name: Python [conda env:xr_312_np2]
-  language: python
+  display_name: Python 3
+  name: python3
 ---
 
 # Clutter detection - Satellite Cloud Images
 
 In this notebook we show howto identify clutter based on collocated cloudtype.
 
-```{code-cell} ipython3
+```{code-cell} python
 import matplotlib.pyplot as plt
 import numpy as np
 import wradlib as wrl
@@ -31,7 +30,7 @@ from osgeo import osr
 
 The cloud data from MSG3 satellite has some issue with the georeferencing. We need to apply a little fix, correct for that. The fix just adds the proper projection and coordinate objects to the dataset.
 
-```{code-cell} ipython3
+```{code-cell} python
 import warnings
 import pyproj
 from pyproj import CRS
@@ -82,7 +81,7 @@ display(sat)
 
 We read radar data from Belgium into a DataTree.
 
-```{code-cell} ipython3
+```{code-cell} python
 # read the radar volume scan
 filename = wradlib_data.DATASETS.fetch("hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf")
 pvol = xd.io.open_odim_datatree(filename)
@@ -93,7 +92,7 @@ display(pvol)
 
 Here we add two different georeferenced coordinates, ``xp``, ``yp``, ``zp`` for the radar azimuthal equidistant projection, and  ``x``, ``y``, ``z`` for the satellite data projection.
 
-```{code-cell} ipython3
+```{code-cell} python
 pvol1 = pvol.match("sweep*")
 vol = []
 for sweep in pvol1:
@@ -110,20 +109,20 @@ display(vol)
 
 Here we interpolate the satellite data into the radar grid (nearest neighbour) and assign it to the volume. See {meth}`wradlib.ipol.IpolMethods.interpolate` and {doc}`../../interpolation/cartesian_to_polar`.
 
-```{code-cell} ipython3
+```{code-cell} python
 ct = sat.isel(band=0).CT.wrl.ipol.interpolate(vol, method="map_coordinates_nearest")
 vol = vol.assign(CT=ct)
 display(vol)
 ```
 
-```{code-cell} ipython3
+```{code-cell} python
 print("Top-left CT center (x/y):", sat.x[0].values, sat.y[0].values)
 print("Top-left radar (x/y):", vol.isel(tilt=0).x[0,0].values, vol.isel(tilt=0).y[0,0].values)
 ```
 
 ## Estimate localisation errors
 
-```{code-cell} ipython3
+```{code-cell} python
 timelag = 9 * 60
 wind = 10
 error = np.absolute(timelag) * wind
@@ -133,7 +132,7 @@ error = np.absolute(timelag) * wind
 
 Then, we call {meth}`wradlib.classify.ClassifyMethods.filter_cloudtype` to derive the clutter map. The it is assiged to the volume.
 
-```{code-cell} ipython3
+```{code-cell} python
 clutter = vol.DBZH.wrl.classify.filter_cloudtype(vol.CT, smoothing=error)
 vol = vol.assign(CMAP=clutter)
 display(vol)
@@ -141,7 +140,7 @@ display(vol)
 
 ## Plot the results
 
-```{code-cell} ipython3
+```{code-cell} python
 fig = plt.figure(figsize=(16, 8))
 
 tilt = 0
