@@ -12,7 +12,7 @@ dependencies:
   - open-radar-data
   - scipy
   - pip
-  - xradar[version='>=0.8.0']
+  - xradar[version='>=0.12.0']
   - lat_lon_parser
   - netcdf4
   - h5py
@@ -30,7 +30,7 @@ dependencies:
   - pytest-doctestplus
   - xmltodict
   - dask
-  - xarray[version='>=2024.10.0']
+  - xarray[version='>=2026.4.0']
   - gdal
   - requests
   - h5netcdf

@@ -95,10 +95,10 @@ Here we add two different georeferenced coordinates, ``xp``, ``yp``, ``zp`` for 
 ```{code-cell} python3
 pvol1 = pvol.match("sweep*")
 vol = []
-for sweep in pvol1.values():
-    swp = sweep.to_dataset().pipe(wrl.georef.georeference)
+for sweep in pvol1:
+    swp = pvol[sweep].to_dataset(inherit="all_coords").wrl.georef.georeference()
     swp = swp.rename(x="xp", y="yp", z="zp")
-    swp = swp.pipe(wrl.georef.georeference, crs=sat.spatial_ref)
+    swp = swp.wrl.georef.georeference(crs=sat.spatial_ref)
     vol.append(swp)
 vol = xr.concat(vol, dim="tilt")
 vol = vol.assign_coords(sweep_mode=vol.sweep_mode)

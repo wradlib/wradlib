@@ -4,5 +4,5 @@ numpy
 packaging
 pyproj
 scipy
-xarray>=2024.10.0
-xradar>=0.8.0
+xarray>=2026.4.0
+xradar>=0.12.0
