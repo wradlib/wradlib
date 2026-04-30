@@ -83,13 +83,13 @@ def download_srtm(filename, destination, *, resolution=3, session=None):
         session object to use
     """
 
-    website = "https://e4ftl01.cr.usgs.gov/MEASURES"
+    website = "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected"
     subres = 3
     if resolution == 30:
         subres = 2
     resolution = f"SRTMGL{resolution}.00{subres}"
-    source = "/".join([website, resolution, "2000.02.11"])
-    url = "/".join([source, filename])
+    source = "/".join([website, resolution])
+    url = "/".join([source, filename[:-4], filename])
 
     if session is None:
         session = init_header_redirect_session()
