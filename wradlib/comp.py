@@ -184,7 +184,7 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
     )
     out = out.unstack("npoints_cart")
     if isinstance(obj, xr.Dataset):
-        out = xr.merge([out, keep])
+        out = xr.merge([out, keep], compat='no_conflicts')
     else:
         out.attrs = obj.attrs
         out.name = f"{obj.name}.togrid"

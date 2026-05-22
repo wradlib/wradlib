@@ -1734,7 +1734,7 @@ def _texture_xarray(obj):
         out.attrs = attrs
         out.name = obj.name + "_TEXTURE"
     else:
-        out = xr.merge([out, keep])
+        out = xr.merge([out, keep], compat='no_conflicts')
     return out
 
 
