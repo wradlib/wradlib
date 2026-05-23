@@ -92,7 +92,7 @@ cd wradlib
 uv venv
 activate
 GDAL_VERSION=$(gdal-config --version)
-uv pip install -e .[dev] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
+uv pip install -e .[dev,doc] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
 ```
 
 ### Install with vcpkg and uv (Windows)
@@ -128,7 +128,7 @@ Add-Content .venv\Scripts\Activate.ps1 '$env:PATH = "$HOME\vcpkg\installed\x64-w
 Add-Content .venv\Scripts\Activate.ps1 '$env:INCLUDE = "$HOME\vcpkg\installed\x64-windows\include"'
 Add-Content .venv\Scripts\Activate.ps1 '$env:LIB = "$HOME\vcpkg\installed\x64-windows\lib"'
 activate
-uv pip install -e .[dev] gdal==3.12.0.*
+uv pip install -e .[dev,doc] gdal==3.12.0.*
 ```
 
 ```powershell
@@ -139,7 +139,7 @@ aws s3 sync s3://cdn.proj.org $ProjDownloadDir --no-sign-request
 
 ```powershell
 vcpkg upgrade gdal --no-dry-run
-uv pip install -e .[dev] gdal==3.12.0.* --upgrade
+uv pip install -e .[dev,doc] gdal==3.12.0.* --upgrade
 ```
 
 ### Install with spack and uv (Linux)
@@ -170,7 +170,7 @@ spack install
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source $HOME/.local/bin/env
 GDAL_VERSION=$(gdal-config --version)
-uv pip install -e wradlib[dev] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
+uv pip install -e wradlib[dev,doc] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
 ```
 
 ## Work on a bug fix, enhancement or new feature
@@ -200,22 +200,44 @@ python -m jupyter notebook docs/render/composition/max_reflectivity.ipynb
 python -m sphinx build -j auto -v -b html docs/ doc-build
 ```
 
-### Create a branch
+### Create a branch and make your changes
 ```bash
 git checkout main
 git checkout -b my-branch
+```
+
+### Test your changes only with testmon option
+```bash
+python -m pytest --testmon
+```
+
+### Check code quality
+```bash
 python -m pre_commit run
-git commit -a -m "describe your changes as in git log"
+```
+
+### Commit your change folowing commit history (git log)
+```bash
+git commit -a -m "describe your changes"
+```
+
+### Push to remote repository
+```bash
 git push origin my-branch
 ```
 
-### Update your branch
+### Reset your branch and make new changes
 ```bash
 git checkout my-branch
 git rebase main
+git reset --soft HEAD~1
+```
+
+### Submit your changes with a forced push
+```bash
 python -m pytest --testmon
 python -m pre_commit run
-git commit -a --amend --date "$(date)"
+git commit -a -m "describe your changes"
 git push origin my-branch -f
 ```
 
