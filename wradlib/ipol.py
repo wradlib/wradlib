@@ -409,7 +409,7 @@ def _interpolate_mapping(src, trg, **kwargs):
 
     # restore attributes and merge with kept variables if Dataset
     if isinstance(src, xr.Dataset):
-        out = xr.merge([out, keep])
+        out = xr.merge([out, keep], compat="no_conflicts")
     else:
         out.attrs = src.attrs
         out.name = src.name
