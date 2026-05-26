@@ -1104,7 +1104,7 @@ def _filter_window_distance_xarray(obj, **kwargs):
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
     if isinstance(obj, xr.Dataset):
-        out = xr.merge([out, keep])
+        out = xr.merge([out, keep], compat="no_conflicts")
     else:
         out.name = "filter_window_distance"
 
@@ -1414,7 +1414,7 @@ def create_gpm_observations(ds):
     tind = ds.airTemperature - 273.15
     tind.name = "TEMP"
 
-    ds2 = xr.merge([zkum, dfrm, rt, tind])
+    ds2 = xr.merge([zkum, dfrm, rt, tind], compat="no_conflicts")
 
     # combine into one variable
     obs = ["ZKUM", "DFRM", "RT", "TEMP"]
