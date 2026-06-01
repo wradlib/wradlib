@@ -7,7 +7,7 @@ C     FORTRAN implementation of phase unfolding
 C
       INTEGER beams, rs, w
       REAL*4 phidp(beams,rs)
-      REAL*4 rho(beams,rs),gphi(beams,rs), stdarr(beams,rs)
+      REAL*4 rho(beams,rs), gradphi(beams,rs), stdarr(beams,rs)
       REAL*4 ts, tr
       INTEGER beam, j, count1, count2, k, l, w_
       REAL*4 ref
