@@ -677,7 +677,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
     gradphi = util.gradient_from_smoothed(phidp)
 
     beams, rs = phidp.shape
-    #TODO: Internal thresholds could also be set as configurable args.
+    # TODO: Internal thresholds could also be set as configurable args.
     # Compute the standard deviation within windows of 9 range bins
     stdarr = np.zeros(phidp.shape, dtype=np.float32)
     for r in range(rs - 9):
@@ -693,7 +693,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
         w=width,
         ts=thr_sphidp,
         tr=thr_rho,
-        )
+    )
 
     return phidp.reshape(shape)
 
