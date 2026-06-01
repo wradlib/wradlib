@@ -561,7 +561,7 @@ def phidp_from_kdp(da):
     return out
 
 
-def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
+def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w, ts, tr):
     """This is the slow Python-based implementation (NOT RECOMMENDED).
 
     The algorithm is based on the paper of :cite:`Wang2009`.
@@ -572,14 +572,14 @@ def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
 
         # step 1: determine location where meaningful PhiDP profile begins
         for j in range(0, rs - w):
-            if (np.sum(stdarr[beam, j : j + w] < 5) == w) and (
-                np.sum(rho[beam, j : j + 5] > 0.9) == w
+            if (np.sum(stdarr[beam, j : j + w] < ts) == w) and (
+                np.sum(rho[beam, j : j + w] > tr) == w
             ):
                 break
 
         ref = np.mean(phidp[beam, j : j + w])
         for k in range(j + w, rs):
-            if np.sum(stdarr[beam, k - w : k] < 5) and np.logical_and(
+            if np.sum(stdarr[beam, k - w : k] < ts) and np.logical_and(
                 gradphi[beam, k] > -5, gradphi[beam, k] < 20
             ):
                 ref += gradphi[beam, k] * 0.5
@@ -593,34 +593,59 @@ def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
 
 
 @singledispatch
-def unfold_phi(phidp, rho, *, width=5, copy=False):
-    r"""Unfolds differential phase by adjusting values that exceeded maximum \
-    ambiguous range.
+def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
+    r"""
+    Unfold differential phase (:math:`\Phi_{DP}`) along the range dimension
+    using a gate-wise phase-unfolding procedure adapted from
+    :cite:`Wang2009`.
 
-    Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
-    THE RANGE.
-
-    Uses the fast Fortran-based implementation if the speedup module is compiled.
-
-    The algorithm is based on the paper of :cite:`Wang2009`.
+    This routine detects reliable weather gates, constructs a local reference
+    phase profile, and corrects wrapped negative phase values by adding 360°
+    where needed.
 
     Parameters
     ----------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (...,nr) with nr being the number of range bins
+        Differential phase array (..., nr), where the last dimension is range.
     rho : :class:`numpy:numpy.ndarray`
-        array of same shape as ``phidp``
+        Copolar correlation coefficient array with the same shape as `phidp`.
     width : int, optional
-       Width of the analysis window, defaults to 5.
+        Number of gates used for local stability and slope checks.
+        Default is 5.
+    thr_sphidp : float, optional
+        Maximum allowed local standard deviation of :math:`\Phi_{DP}` used when
+        detecting the beginning of the valid :math:`\Phi_{DP}` profile.
+        Default is 5°.
+    thr_rho : float, optional
+        Minimum required :math:`\rho_{HV}` within the stability window.
+        Default is 0.9.
     copy : bool, optional
-       Leaves original `phidp` array unchanged if set to True
-       (default: False)
+        If True, operate on a copy of `phidp` and leave the original `phidp`
+        array unchanged.
 
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (..., n azimuth angles, n range gates) reconstructed
-        :math:`\Phi_{DP}`
+        Unfolded :math:`\Phi_{DP}` array with the same shape as the input.
+
+    Notes
+    -----
+    * Accepts arbitrarily dimensioned arrays, but the last dimension must be
+      range.
+    * Uses the fast Fortran-based implementation if the speedup module is
+      compiled.
+    * The algorithm follows the logic described by :cite:`Wang2009`:
+
+        - The beginning of the valid :math:`\Phi_{DP}` profile is
+          identified using a stability criterion based on the local standard
+          deviation of :math:`\Phi_{DP}` and sufficiently high
+          :math:`\rho_{HV}`.
+        - A reference :math:`\Phi_{DP}` is initialised from the mean phase
+          over the first reliable gates.
+        - At each subsequent gate, local phase variability and the local
+          :math:`\Phi_{DP}` gradient are checked before updating the reference.
+        - If the observed phase falls more than 80° below the reference and is
+          negative, 360° is added to unfold the phase.
     """
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
@@ -645,7 +670,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     gradphi = util.gradient_from_smoothed(phidp)
 
     beams, rs = phidp.shape
-
+    # TODO: Internal thresholds could also be set as configurable args.
     # Compute the standard deviation within windows of 9 range bins
     stdarr = np.zeros(phidp.shape, dtype=np.float32)
     for r in range(rs - 9):
@@ -659,6 +684,8 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
         beams=beams,
         rs=rs,
         w=width,
+        ts=thr_sphidp,
+        tr=thr_rho,
     )
 
     return phidp.reshape(shape)

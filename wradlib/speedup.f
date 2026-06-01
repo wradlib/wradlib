@@ -1,16 +1,17 @@
 ! Copyright (c) wradlib developers.
 ! Distributed under the MIT License. See LICENSE.txt for more info.
 C FILE: SPEEDUP.F
-      SUBROUTINE F_UNFOLD_PHI(PHIDP, RHO, GRADPHI, STDARR, BEAMS, RS, W)
+      SUBROUTINE F_UNFOLD_PHI(PHIDP,RHO,GRADPHI,STDARR,BEAMS,RS,W,TS,TR)
 C
 C     FORTRAN implementation of phase unfolding
 C
       INTEGER beams, rs, w
       REAL*4 phidp(beams,rs)
-      REAL*4 rho(beams,rs),gradphi(beams,rs), stdarr(beams,rs)
+      REAL*4 rho(beams,rs), gradphi(beams,rs), stdarr(beams,rs)
+      REAL*4 ts, tr
       INTEGER beam, j, count1, count2, k, l, w_
       REAL*4 ref
-Cf2py intent(in) beams, rs, rho, gradphi, stdarr, w
+Cf2py intent(in) beams, rs, rho, gradphi, stdarr, w, ts, tr
 Cf2py intent(in,out,overwrite) phidp
 
       w_ = w - 1
@@ -28,10 +29,10 @@ C        Determine location where meaningful phidpDP profile begins
             count1 = 0
             count2 = 0
             DO i=j, j+w_
-               IF (stdarr(beam,i)<5) THEN
+               IF (stdarr(beam,i)<ts) THEN
                   count1 = count1 + 1
                ENDIF
-               IF (rho(beam,i)>0.9) THEN
+               IF (rho(beam,i)>tr) THEN
                   count2 = count2 + 1
                ENDIF
             ENDDO
