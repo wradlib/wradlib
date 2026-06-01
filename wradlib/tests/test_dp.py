@@ -221,6 +221,15 @@ def test_unfold_phi(dp_data):
     dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho)
     dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho, copy=True)
 
+    # sanity check, unfold single ray
+    phi_true = np.arange(540, dtype="float32")
+    phi_true -= 180.0
+    phi_raw1 = phi_true.copy()
+    phi_raw1[phi_raw1 > 180] -= 360
+    rho = np.ones(540, dtype="float32")
+    out1 = dp.unfold_phi(phi_raw1, rho, copy=True)
+    np.testing.assert_array_equal(out1, phi_true)
+
 
 def test_unfold_phi_vulpiani():
     phi_true = np.arange(600)
