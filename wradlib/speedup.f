@@ -1,7 +1,7 @@
 ! Copyright (c) wradlib developers.
 ! Distributed under the MIT License. See LICENSE.txt for more info.
 C FILE: SPEEDUP.F
-      SUBROUTINE F_UNFOLD_PHI(PHIDP,RHO,GPHI,STDARR,BEAMS,RS,W,TS,TR)
+      SUBROUTINE F_UNFOLD_PHI(PHIDP,RHO,GRADPHI,STDARR,BEAMS,RS,W,TS,TR)
 C
 C     FORTRAN implementation of phase unfolding
 C
@@ -11,7 +11,7 @@ C
       REAL*4 ts, tr
       INTEGER beam, j, count1, count2, k, l, w_
       REAL*4 ref
-Cf2py intent(in) beams, rs, rho, gphi, stdarr, w, ts, tr
+Cf2py intent(in) beams, rs, rho, gradphi, stdarr, w, ts, tr
 Cf2py intent(in,out,overwrite) phidp
 
       w_ = w - 1
@@ -51,12 +51,12 @@ C       Now start to check for phase folding
             sumup = SUM( stdarr(beam,k-w_:k) )
             slopeok = 1
             DO l=k-w_, k
-               IF ((gphi(beam,l)<-5) .OR. (gphi(beam,l)>20)) THEN
+               IF ((gradphi(beam,l)<-5) .OR. (gradphi(beam,l)>20)) THEN
                   slopeok = 0
                ENDIF
             ENDDO
             IF ((slopeok==1) .AND. (sumup<15.)) THEN
-               ref = ref + gphi(beam, k)*0.5
+               ref = ref + gradphi(beam, k)*0.5
                IF (phidp(beam,k) - ref < -80.) THEN
                   IF (phidp(beam,k) < 0) THEN
                      phidp(beam,k) = phidp(beam,k) + 360.

@@ -686,7 +686,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
     phidp = func(
         phidp=phidp.astype(dtype),
         rho=rho.astype(dtype),
-        gphi=gradphi.astype(dtype),
+        gradphi=gradphi.astype(dtype),
         stdarr=stdarr.astype(dtype),
         beams=beams,
         rs=rs,
