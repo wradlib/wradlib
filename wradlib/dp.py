@@ -634,8 +634,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
       range.
     * Uses the fast Fortran-based implementation if the speedup module is
       compiled.
-    * The algorithm follows the logic described by Wang and Chandrasekar
-      (2009) [1]_:
+    * The algorithm follows the logic described by :cite:`Wang2009`:
 
         - The beginning of the valid :math:`\Phi_{DP}` profile is
           identified using a stability criterion based on the local standard
@@ -647,12 +646,6 @@ def unfold_phi(phidp, rho, *, width=5, copy=False, thr_sphidp=5, thr_rho=0.9):
           :math:`\Phi_{DP}` gradient are checked before updating the reference.
         - If the observed phase falls more than 80° below the reference and is
           negative, 360° is added to unfold the phase.
-
-    References
-    ----------
-    .. [1] Wang, Y., & Chandrasekar, V. (2009). Algorithm for estimation of
-        the specific differential phase. Journal of Atmospheric and Oceanic
-        Technology, 26(12), 2565–2578. https://doi.org/10.1175/2009JTECHA1358.1
     """
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
