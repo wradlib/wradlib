@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-# Sweep to Raster
+# Max reflectivity
 
 In this notebook we show the production of a maximum reflectivity composite from 3 neighboring radars for projected as well as geographic raster targets.
 
@@ -93,7 +93,7 @@ for p, name in enumerate(["projected", "geographic"]):
 
     for i, raster_radar in enumerate(rasters_radar):
         ax = axes[i, p]
-        raster_radar["DBZH"].plot(ax=ax, vmin=0, vmax=50, cmap="HomeyerRainbow")
+        raster_radar["DBZH"].plot(ax=ax, vmin=0, vmax=60, cmap="HomeyerRainbow")
         ax.set_aspect("equal", "box")
         ax.set_title(f"{name} - Radar {i}")
     rasters[name] = rasters_radar
@@ -125,7 +125,7 @@ display(rasters["geographic"])
 ```{code-cell} python
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 for i, (name, raster) in enumerate(rasters.items()):
-    raster["DBZH"].plot(ax=axes[i], vmin=0, vmax=50, cmap="HomeyerRainbow")
+    raster["DBZH"].plot(ax=axes[i], vmin=0, vmax=60, cmap="HomeyerRainbow")
     axes[i].set_title(name)
 fig.tight_layout()
 ```
