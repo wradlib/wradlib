@@ -2,7 +2,7 @@ Developers
 ----------
 
 Kai Muehlbauer - University of Bonn
-Edouard Goudenhoofdt - The Royal Meteorological Institute of Belgium
+Edouard Goudenhoofdt - Freelancer
 Maik Heistermann - University of Potsdam
 
 Contributors
