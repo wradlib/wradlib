@@ -67,6 +67,7 @@ from functools import singledispatch
 import numpy as np
 import xarray as xr
 from scipy import integrate, interpolate
+from xhistogram.xarray import histogram as xhist
 from xradar.model import sweep_vars_mapping
 
 from wradlib import trafo, util
@@ -910,8 +911,8 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
     xarray.Dataset
         Dataset containing:
 
-        - ``<phidp.name>_sys_ray`` : Ray-wise system PHIDP estimate.
-        - ``<phidp.name>_sys_`` : Global system PHIDP estimate.
+        - ``sysphi_ray`` : ray-wise system PHIDP estimate.
+        - ``sysphi`` : global system PHIDP estimate.
         - ``start_range`` : Start range of the selected valid segment.
         - ``stop_range`` : Stop range of the selected valid segment.
 
@@ -945,21 +946,24 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
 
     # select PHIDP values within identified interval
     phi = phidp.where((phidp.range >= start_range) & (phidp.range <= stop_range))
+    valid_bins = phi.count("range")
+    valid_bins.name = "valid_bins"
 
     # ray-wise estimate
-    phi = phi.median(dim="range", skipna=True)
-    phi.name = f"{phidp.name}_sys_ray"
+    sysphi_ray = phi.median(dim="range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
 
     # global estimate from lowest ray-wise values
-    sysphi = _aggregate_sysphi(phi, n_lowest_rays)
-    sysphi.name = f"{phidp.name}_sys_sweep"
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
 
     return xr.merge(
         [
-            phi,
+            sysphi_ray,
             sysphi,
             start_range,
             stop_range,
+            valid_bins,
         ],
         compat="no_conflicts",
     )
@@ -997,8 +1001,8 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     xarray.Dataset
         Dataset containing:
 
-        - ``<phidp.name>_sys_ray`` : Ray-wise system PHIDP estimate.
-        - ``<phidp.name>_sys_`` : Global system PHIDP estimate.
+        - ``sysphi_ray`` : ray-wise system PHIDP estimate.
+        - ``sysphi`` : global system PHIDP estimate.
         - ``start_range`` : Start range of the selected interval.
         - ``stop_range`` : Stop range of the selected interval.
         - ``valid_bins`` : Number of valid PHIDP bins within the selected
@@ -1036,16 +1040,16 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     # extract interval and compute ray-wise estimate
     phi = phidp.where((phidp.range >= start_range) & (phidp.range <= stop_range))
 
-    phi = phi.median(dim="range", skipna=True)
-    phi.name = f"{phidp.name}_sys_ray"
+    sysphi_ray = phi.median(dim="range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
 
     # derive global estimate
-    sysphi = _aggregate_sysphi(phi, n_lowest_rays)
-    sysphi.name = f"{phidp.name}_sys_sweep"
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
 
     return xr.merge(
         [
-            phi,
+            sysphi_ray,
             sysphi,
             start_range,
             stop_range,
@@ -1077,8 +1081,8 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
     Returns
     -------
     xarray.Dataset
-        - ``<phidp.name>_sys_ray`` : ray-wise system PHIDP estimate
-        - ``<phidp.name>_sys_`` : global system PHIDP estimate
+        - ``sysphi_ray`` : ray-wise system PHIDP estimate
+        - ``sysphi`` : global system PHIDP estimate
     """
 
     # mask valid data
@@ -1088,19 +1092,120 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
     phib_cumsum = phib.cumsum("range", skipna=True)
 
     # select first N valid bins per ray
-    # phi = phidp.where(phib_cumsum <= n_valid_bins)
+    mask = phib.astype(bool) & (phib_cumsum <= n_valid_bins)
+    phi = phidp.where(mask)
 
-    phi = phidp.where(phib.astype(bool) & (phib_cumsum <= n_valid_bins))
+    # diagnostics
+    valid_bins = phi.count("range")
+    valid_bins.name = "valid_bins"
+
+    start_range = phidp.range.where(mask).min("range", skipna=True)
+    start_range.name = "start_range"
+
+    stop_range = phidp.range.where(mask).max("range", skipna=True)
+    stop_range.name = "stop_range"
 
     # ray-wise statistic
-    phi = phi.median("range", skipna=True)
-    phi.name = f"{phidp.name}_sys_ray"
+    sysphi_ray = phi.median("range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
 
     # global statistic (robust low-end aggregation)
-    sysphi = _aggregate_sysphi(phi, n_lowest_rays)
-    sysphi.name = f"{phidp.name}_sys_sweep"
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
 
-    return xr.merge([phi, sysphi], compat="no_conflicts")
+    return xr.merge(
+        [
+            sysphi_ray,
+            sysphi,
+            valid_bins,
+            start_range,
+            stop_range,
+        ],
+        compat="no_conflicts",
+    )
+
+
+def system_phidp_hist(
+    phidp, bins=(-180, 180, 0.1), window=11, threshold=0.5, n_lowest_rays=30
+):
+    """
+    Estimate the system differential phase (PHIDP) offset from PHIDP histograms.
+
+    A histogram of PHIDP values is computed for each azimuth ray and smoothed
+    along the histogram bin dimension. Two ray-wise estimates of the system
+    PHIDP are derived:
+
+    - ``sysphi_peak_ray``: location of the histogram maximum.
+    - ``sysphi_first_ray``: first histogram bin exceeding a fraction of the
+      normalized peak count.
+
+    Sweep-level estimates (``sysphi_peak`` and ``sysphi_first``) are obtained
+    by aggregating the lowest ``n_lowest_rays`` ray-wise estimates.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field with dimensions including ``range`` and
+        typically ``azimuth``.
+    bins : tuple, optional
+        Histogram bin specification passed to ``np.arange`` as
+        ``(start, stop, step)``. Default is ``(-180, 180, 0.1)``
+    window : int, optional
+        Size of the moving-average smoothing window applied to the histogram
+        along the bin dimension. Default is ``11``.
+    threshold : float, optional
+        Relative threshold applied to the normalized histogram. The first bin
+        exceeding this threshold is used to derive ``sysphi_first_ray``.
+        Default is ``0.5``.
+    n_lowest_rays : int, optional
+        Number of lowest ray-wise estimates used when aggregating the
+        sweep-level system PHIDP estimate. Default is ``30``.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        - ``sysphi_hist``: PHIDP histogram for each ray.
+        - ``sysphi_peak_ray``: ray-wise estimate from the histogram peak.
+        - ``sysphi_first_ray``: ray-wise estimate from the threshold crossing.
+        - ``sysphi_peak``: sweep-level estimate aggregated from
+          ``sysphi_peak_ray``.
+        - ``sysphi_first``: sweep-level estimate aggregated from
+          ``sysphi_first_ray``.
+    """
+    sysphi_hist = xhist(phidp, dim=("range",), bins=[np.arange(*bins)])
+    sysphi_hist.name = "sysphi_hist"
+    hist_dim = next(dim for dim in sysphi_hist.dims if dim.endswith("_bin"))
+    sysphi_hist = sysphi_hist.rename({hist_dim: "bin"})
+
+    phi_hist_smooth = sysphi_hist.rolling(bin=window, center=True).mean()
+    sysphi_peak_ray = phi_hist_smooth.idxmax("bin")
+    sysphi_peak_ray.name = "sysphi_peak_ray"
+
+    hist_max = phi_hist_smooth.max(dim="bin")
+    phi_hist_norm = phi_hist_smooth / hist_max.where(hist_max > 0)
+    phi_hist_thresh = phi_hist_norm.where(phi_hist_norm > threshold)
+
+    sysphi_first_ray = phi_hist_thresh.bin.where(phi_hist_thresh.notnull()).min("bin")
+    sysphi_first_ray.name = "sysphi_first_ray"
+
+    sysphi_peak = _aggregate_sysphi(sysphi_peak_ray, n_lowest_rays)
+    sysphi_peak.name = "sysphi_peak"
+
+    sysphi_first = _aggregate_sysphi(sysphi_first_ray, n_lowest_rays)
+    sysphi_first.name = "sysphi_first"
+
+    return xr.merge(
+        [
+            sysphi_hist,
+            sysphi_peak_ray,
+            sysphi_first_ray,
+            sysphi_peak,
+            sysphi_first,
+        ],
+        compat="no_conflicts",
+    )
 
 
 class DpMethods(util.XarrayMethods):
@@ -1175,6 +1280,13 @@ class DpMethods(util.XarrayMethods):
             return system_phidp_first(self, *args, **kwargs)
         else:
             return system_phidp_first(self._obj, *args, **kwargs)
+
+    @util.docstring(system_phidp_hist)
+    def system_phidp_hist(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return system_phidp_hist(self, *args, **kwargs)
+        else:
+            return system_phidp_hist(self._obj, *args, **kwargs)
 
     @util.docstring(system_phidp)
     def system_phidp(self, *args, **kwargs):
