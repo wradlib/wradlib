@@ -25,6 +25,7 @@ dependencies:
   - notebook
   - numpy
   - matplotlib-base
+  - open-radar-data
   - pint
   - pint-xarray
   - pip

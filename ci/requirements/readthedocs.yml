@@ -29,6 +29,7 @@ dependencies:
   - netCDF4
   - notebook
   - numpy
+  - open-radar-data
   - pandoc
   - pint
   - pint-xarray
