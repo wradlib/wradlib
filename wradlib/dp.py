@@ -873,15 +873,15 @@ def _aggregate_sysphi(phi, n_lowest_rays):
 
 
 def system_phidp_block(phidp, rng, n_lowest_rays=30):
-    """
-    Estimate the system differential phase (system PHIDP) from contiguous
-    valid PHIDP segments along radar rays.
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) from contiguous
+    valid :math:`\Phi_{DP}` segments along radar rays.
 
     The algorithm searches each ray for a sequence of N consecutive valid
-    PHIDP bins, where N is derived from the requested range length (`rng`).
-    For each ray, the median PHIDP within the identified segment is used as
-    a ray-wise system PHIDP estimate. The final system PHIDP estimate is
-    computed as the median of the `n_lowest_rays` smallest ray-wise estimates.
+    :math:`\Phi_{DP}` bins, where N is derived from the requested range length (`rng`).
+    For each ray, the median :math:`\Phi_{DP}` within the identified segment is used as
+    a ray-wise :math:`\Phi_{DP}^{sys}` estimate. The final :math:`\Phi_{DP}^{sys}`
+    estimate is computed as the median of the `n_lowest_rays` smallest ray-wise estimates.
 
     Parameters
     ----------
@@ -891,24 +891,24 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
         Range length (m) used to determine the required number of consecutive
         valid bins.
     n_lowest_rays : int, optional
-        Number of lowest ray-wise PHIDP estimates used to derive the final
-        system PHIDP estimate. Default is 30.
+        Number of lowest ray-wise :math:`\Phi_{DP}` estimates used to derive the final
+        :math:`\Phi_{DP}^{sys}` estimate. Default is 30.
 
     Returns
     -------
     xarray.Dataset
         Dataset containing:
 
-        - ``sysphi_ray`` : ray-wise system PHIDP estimate.
-        - ``sysphi`` : global system PHIDP estimate.
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
         - ``start_range`` : Start range of the selected valid segment.
         - ``stop_range`` : Stop range of the selected valid segment.
-        - ``valid_bins`` : Number of valid PHIDP bins within the selected
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
           interval.
 
     Notes
     -----
-    Rays that do not contain N consecutive valid PHIDP bins receive NaN
+    Rays that do not contain N consecutive valid :math:`\Phi_{DP}` bins receive NaN
     values for the corresponding outputs.
     """
 
@@ -960,19 +960,19 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
 
 
 def system_phidp_window(phidp, rng, n_lowest_rays=30):
-    """
-    Estimate the system differential phase (system PHIDP) from the
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) from the
     range interval with the highest valid-data coverage.
 
     For each ray, a rolling window of length ``rng`` is evaluated and
-    the interval containing the maximum number of valid PHIDP bins is
-    selected. The median PHIDP within this interval is used as a ray-wise
-    system PHIDP estimate. The final system PHIDP estimate is computed as
+    the interval containing the maximum number of valid :math:`\Phi_{DP}` bins is
+    selected. The median :math:`\Phi_{DP}` within this interval is used as a ray-wise
+    :math:`\Phi_{DP}^{sys}` estimate. The final :math:`\Phi_{DP}^{sys}` estimate is computed as
     the median of the ``n_lowest_rays`` smallest ray-wise estimates.
 
     Unlike ``system_phidp_block``, this method does not require all
     bins within the selected interval to be valid. It therefore provides
-    estimates for rays that contain gaps in PHIDP coverage.
+    estimates for rays that contain gaps in :math:`\Phi_{DP}` coverage.
 
     Parameters
     ----------
@@ -982,23 +982,23 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
         Physical range length (m) used to determine the rolling window size.
     n_lowest_rays : int, optional
         Number of lowest ray-wise estimates used to derive the final
-        system PHIDP estimate. Default is 30.
+        :math:`\Phi_{DP}^{sys}` estimate. Default is 30.
 
     Returns
     -------
     xarray.Dataset
         Dataset containing:
 
-        - ``sysphi_ray`` : ray-wise system PHIDP estimate.
-        - ``sysphi`` : global system PHIDP estimate.
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
         - ``start_range`` : Start range of the selected interval.
         - ``stop_range`` : Stop range of the selected interval.
-        - ``valid_bins`` : Number of valid PHIDP bins within the selected
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
           interval.
 
     Notes
     -----
-    The selected interval maximizes the count of valid PHIDP bins within
+    The selected interval maximizes the count of valid :math:`\Phi_{DP}` bins within
     the specified window length. No minimum coverage threshold is applied.
     """
 
@@ -1048,13 +1048,13 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
 
 
 def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
-    """
-    Estimate system PHIDP using the first N valid PHIDP bins along each ray.
+    r"""
+    Estimate :math:`\Phi_{DP}^{sys}` using the first N valid :math:`\Phi_{DP}` bins along each ray.
 
-    For each ray, the first `n_valid_bins` valid (non-NaN) PHIDP values are
+    For each ray, the first `n_valid_bins` valid (non-NaN) :math:`\Phi_{DP}` values are
     selected, regardless of whether they are contiguous in range. The median
-    of these values is computed to obtain a ray-wise system PHIDP estimate.
-    The final system PHIDP is the median of the `n_lowest_rays` smallest
+    of these values is computed to obtain a ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+    The final :math:`\Phi_{DP}^{sys}` is the median of the `n_lowest_rays` smallest
     ray-wise estimates.
 
     Parameters
@@ -1062,19 +1062,19 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
     phidp : xarray.DataArray
         Differential phase field with a ``range`` dimension.
     n_valid_bins : int, optional
-        Number of valid PHIDP samples to use per ray.
+        Number of valid :math:`\Phi_{DP}` samples to use per ray.
     n_lowest_rays : int, optional
-        Number of lowest ray-wise estimates used for the final system value.
+        Number of lowest ray-wise estimates used for the final :math:`\Phi_{DP}^{sys}` value.
 
     Returns
     -------
     xarray.Dataset
         Dataset containing:
-         - ``sysphi_ray`` : ray-wise system PHIDP estimate.
-        - ``sysphi`` : global system PHIDP estimate.
+         - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
         - ``start_range`` : Start range of the selected interval.
         - ``stop_range`` : Stop range of the selected interval.
-        - ``valid_bins`` : Number of valid PHIDP bins within the selected
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
           interval.
     """
 
@@ -1121,12 +1121,12 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
 def system_phidp_hist(
     phidp, bins=(-180, 180, 0.1), window=11, threshold=0.5, n_lowest_rays=30
 ):
-    """
-    Estimate the system differential phase (PHIDP) offset from PHIDP histograms.
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) offset from
+    :math:`\Phi_{DP}` histograms.
 
-    A histogram of PHIDP values is computed for each azimuth ray and smoothed
-    along the histogram bin dimension. Two ray-wise estimates of the system
-    PHIDP are derived:
+    A histogram of :math:`\Phi_{DP}` values is computed for each azimuth ray and smoothed
+    along the histogram bin dimension. Two ray-wise estimates of the :math:`\Phi_{DP}^{sys}` are derived:
 
     - ``sysphi_peak_ray``: location of the histogram maximum.
     - ``sysphi_first_ray``: first histogram bin exceeding a fraction of the
@@ -1152,14 +1152,14 @@ def system_phidp_hist(
         Default is ``0.5``.
     n_lowest_rays : int, optional
         Number of lowest ray-wise estimates used when aggregating the
-        sweep-level system PHIDP estimate. Default is ``30``.
+        sweep-level :math:`\Phi_{DP}^{sys}` estimate. Default is ``30``.
 
     Returns
     -------
     xarray.Dataset
         Dataset containing:
 
-        - ``sysphi_hist``: PHIDP histogram for each ray.
+        - ``sysphi_hist``: :math:`\Phi_{DP}` histogram for each ray.
         - ``sysphi_peak_ray``: ray-wise estimate from the histogram peak.
         - ``sysphi_first_ray``: ray-wise estimate from the threshold crossing.
         - ``sysphi_peak``: sweep-level estimate aggregated from
