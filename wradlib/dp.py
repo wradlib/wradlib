@@ -67,10 +67,11 @@ from functools import singledispatch
 import numpy as np
 import xarray as xr
 from scipy import integrate, interpolate
-from xhistogram.xarray import histogram as xhist
 from xradar.model import sweep_vars_mapping
 
 from wradlib import trafo, util
+
+xhist = util.import_optional("xhistogram.xarray")
 
 
 @singledispatch
@@ -1166,7 +1167,7 @@ def system_phidp_hist(
         - ``sysphi_first``: sweep-level estimate aggregated from
           ``sysphi_first_ray``.
     """
-    sysphi_hist = xhist(phidp, dim=("range",), bins=[np.arange(*bins)])
+    sysphi_hist = xhist.histogram(phidp, dim=("range",), bins=[np.arange(*bins)])
     sysphi_hist.name = "sysphi_hist"
     hist_dim = next(dim for dim in sysphi_hist.dims if dim.endswith("_bin"))
     sysphi_hist = sysphi_hist.rename({hist_dim: "bin"})
