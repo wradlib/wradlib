@@ -899,9 +899,8 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
     phidp : xarray.DataArray
         Differential phase field containing a ``range`` dimension.
     rng : float
-        Range length used to determine the required number of consecutive
-        valid bins. The conversion to a bin count is performed by
-        ``_get_bins_from_range``.
+        Range length (m) used to determine the required number of consecutive
+        valid bins.
     n_lowest_rays : int, optional
         Number of lowest ray-wise PHIDP estimates used to derive the final
         system PHIDP estimate. Default is 30.
@@ -915,6 +914,8 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
         - ``sysphi`` : global system PHIDP estimate.
         - ``start_range`` : Start range of the selected valid segment.
         - ``stop_range`` : Stop range of the selected valid segment.
+        - ``valid_bins`` : Number of valid PHIDP bins within the selected
+          interval.
 
     Notes
     -----
@@ -980,7 +981,7 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     system PHIDP estimate. The final system PHIDP estimate is computed as
     the median of the ``n_lowest_rays`` smallest ray-wise estimates.
 
-    Unlike ``system_phidp_contiguous``, this method does not require all
+    Unlike ``system_phidp_block``, this method does not require all
     bins within the selected interval to be valid. It therefore provides
     estimates for rays that contain gaps in PHIDP coverage.
 
@@ -989,9 +990,7 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     phidp : xarray.DataArray
         Differential phase field containing a ``range`` dimension.
     rng : float
-        Physical range length used to determine the rolling window size.
-        The conversion to a number of bins is performed by
-        ``_get_bins_from_range``.
+        Physical range length (m) used to determine the rolling window size.
     n_lowest_rays : int, optional
         Number of lowest ray-wise estimates used to derive the final
         system PHIDP estimate. Default is 30.
@@ -1081,8 +1080,13 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
     Returns
     -------
     xarray.Dataset
-        - ``sysphi_ray`` : ray-wise system PHIDP estimate
-        - ``sysphi`` : global system PHIDP estimate
+        Dataset containing:
+         - ``sysphi_ray`` : ray-wise system PHIDP estimate.
+        - ``sysphi`` : global system PHIDP estimate.
+        - ``start_range`` : Start range of the selected interval.
+        - ``stop_range`` : Stop range of the selected interval.
+        - ``valid_bins`` : Number of valid PHIDP bins within the selected
+          interval.
     """
 
     # mask valid data
@@ -1117,9 +1121,9 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
         [
             sysphi_ray,
             sysphi,
-            valid_bins,
             start_range,
             stop_range,
+            valid_bins,
         ],
         compat="no_conflicts",
     )
