@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-# System Differential Phase $\phi_{DP}^{sys}$
+# System Differential Phase {math}`\Phi_{DP}^{sys}`$
 
 ```{code-cell} ipython3
 import warnings
