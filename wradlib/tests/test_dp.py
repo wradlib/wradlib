@@ -375,3 +375,17 @@ def test_system_phidp():
     assert res_first["sysphi"].item() == 130.5
     assert res_hist["sysphi_peak"].item() == pytest.approx(128.55)
     assert res_hist["sysphi_first"].item() == pytest.approx(128.05)
+
+
+def test_system_phidp_xarray(gamic_swp):
+    phase = gamic_swp.PHIDP.where(gamic_swp.RHOHV > 0.9)
+    res_block = phase.wrl.dp.system_phidp_block(rng=2000.0)
+    res_window = phase.wrl.dp.system_phidp_window(rng=2000.0)
+    res_first = phase.wrl.dp.system_phidp_first()
+    res_hist = phase.wrl.dp.system_phidp_hist()
+
+    assert res_block["sysphi"].item() == pytest.approx(-80.128479)
+    assert res_window["sysphi"].item() == pytest.approx(-80.315254)
+    assert res_first["sysphi"].item() == pytest.approx(-80.651726)
+    assert res_hist["sysphi_peak"].item() == pytest.approx(-80.55)
+    assert res_hist["sysphi_first"].item() == pytest.approx(-81.6)

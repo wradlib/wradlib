@@ -57,7 +57,7 @@ __all__ = [
     "system_phidp_block",
     "system_phidp_window",
     "system_phidp_first",
-    "system_phidp",
+    "system_phidp_hist",
     "DpMethods",
 ]
 __doc__ = (__doc__ or "") + _AUTOSUMMARY.format("\n   ".join(__all__))
@@ -871,18 +871,6 @@ def _aggregate_sysphi(phi, n_lowest_rays):
     return valid_phi.sortby(valid_phi)[:n_lowest_rays].median(skipna=True)
 
 
-def system_phidp(*args, **kwargs):
-    method = kwargs.pop("method", "block")
-    if method == "first":
-        return system_phidp_first(*args, **kwargs)
-    elif method == "window":
-        return system_phidp_window(*args, **kwargs)
-    elif method == "window":
-        return system_phidp_block(*args, **kwargs)
-    else:
-        return system_phidp_block(*args, **kwargs)
-
-
 def system_phidp_block(phidp, rng, n_lowest_rays=30):
     """
     Estimate the system differential phase (system PHIDP) from contiguous
@@ -1291,13 +1279,6 @@ class DpMethods(util.XarrayMethods):
             return system_phidp_hist(self, *args, **kwargs)
         else:
             return system_phidp_hist(self._obj, *args, **kwargs)
-
-    @util.docstring(system_phidp)
-    def system_phidp(self, *args, **kwargs):
-        if not isinstance(self, DpMethods):
-            return system_phidp(self, *args, **kwargs)
-        else:
-            return system_phidp(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
