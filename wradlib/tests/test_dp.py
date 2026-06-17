@@ -373,5 +373,5 @@ def test_system_phidp():
     assert res_window["sysphi"].item() == 132.75
     assert res_first["sysphi_ray"].item() == 130.5
     assert res_first["sysphi"].item() == 130.5
-    assert res_hist["sysphi_peak"] == 128.5
-    assert res_hist["sysphi_first"] == 128.0
+    assert res_hist["sysphi_peak"].item() == 128.5
+    assert res_hist["sysphi_first"].item() == 128.0
