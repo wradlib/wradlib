@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import wradlib_data
 import xarray as xr
 from scipy import integrate
 
@@ -377,8 +378,10 @@ def test_system_phidp():
     assert res_hist["sysphi_first"].item() == pytest.approx(128.05)
 
 
-def test_system_phidp_xarray(gamic_swp):
-    phase = gamic_swp.PHIDP.where(gamic_swp.RHOHV > 0.9)
+def test_system_phidp_xarray():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:
+        phase = swp.PHIDP.where(swp.RHOHV > 0.9)
     res_block = phase.wrl.dp.system_phidp_block(rng=2000.0)
     res_window = phase.wrl.dp.system_phidp_window(rng=2000.0)
     res_first = phase.wrl.dp.system_phidp_first()
