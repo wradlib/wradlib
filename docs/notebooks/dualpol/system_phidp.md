@@ -11,7 +11,8 @@ kernelspec:
   name: python3
 ---
 
-# System Differential Phase {math}`\Phi_{DP}^{sys}`$
+(system_phidp_main_header)=
+# System Differential Phase {math}`\Phi_{DP}^{sys}`
 
 ```{code-cell} ipython3
 import warnings

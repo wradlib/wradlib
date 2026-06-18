@@ -910,6 +910,10 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
     -----
     Rays that do not contain N consecutive valid :math:`\Phi_{DP}` bins receive NaN
     values for the corresponding outputs.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
 
     # binary mask of valid PHIDP bins
@@ -1000,6 +1004,10 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     -----
     The selected interval maximizes the count of valid :math:`\Phi_{DP}` bins within
     the specified window length. No minimum coverage threshold is applied.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
 
     # binary mask of valid PHIDP bins
@@ -1070,12 +1078,17 @@ def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
     -------
     xarray.Dataset
         Dataset containing:
-         - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
         - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
         - ``start_range`` : Start range of the selected interval.
         - ``stop_range`` : Stop range of the selected interval.
         - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
           interval.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
 
     # mask valid data
@@ -1166,6 +1179,10 @@ def system_phidp_hist(
           ``sysphi_peak_ray``.
         - ``sysphi_first``: sweep-level estimate aggregated from
           ``sysphi_first_ray``.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
     sysphi_hist = xhist.histogram(phidp, dim=("range",), bins=[np.arange(*bins)])
     sysphi_hist.name = "sysphi_hist"
