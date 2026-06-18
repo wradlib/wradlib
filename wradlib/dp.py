@@ -862,7 +862,7 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
 
 @singledispatch
 def rhohv_noise_correction(rho, snr):
-    """
+    r"""
     Correct correlation coefficient (:math:`\rho_{HV}`) for receiver noise bias.
 
     This function applies a noise-bias correction to the polarimetric
