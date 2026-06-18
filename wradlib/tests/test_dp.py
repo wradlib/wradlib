@@ -335,11 +335,12 @@ def test_system_phidp():
             133.5,
             134.0,
             134.5,
+            135.0,
             np.nan,
             np.nan,
         ],
         dims=["range"],
-        coords={"range": np.arange(19) * 250.0},
+        coords={"range": np.arange(20) * 250.0},
         name="PHIDP",
     ).expand_dims(azimuth=[0])
 
@@ -387,8 +388,8 @@ def test_system_phidp_xarray():
     res_first = phase.wrl.dp.system_phidp_first()
     res_hist = phase.wrl.dp.system_phidp_hist()
 
-    assert res_block["sysphi"].item() == pytest.approx(-80.128479)
-    assert res_window["sysphi"].item() == pytest.approx(-80.315254)
+    assert res_block["sysphi"].item() == pytest.approx(-80.149078)
+    assert res_window["sysphi"].item() == pytest.approx(-80.348213)
     assert res_first["sysphi"].item() == pytest.approx(-80.651726)
     assert res_hist["sysphi_peak"].item() == pytest.approx(-80.55)
     assert res_hist["sysphi_first"].item() == pytest.approx(-81.6)
@@ -433,3 +434,85 @@ def test_rhohv_noise_correction_xarray():
     xr.testing.assert_allclose(result, expected)
 
     assert result.name.endswith("_NC")
+
+
+def make_phi():
+    r = np.arange(20)
+
+    data = np.full(20, np.nan)
+    data[6:14] = np.arange(8)
+
+    return xr.DataArray(
+        data,
+        coords={"range": r},
+        dims="range",
+    )
+
+
+def test_delta_phidp_basic_properties():
+    phi = make_phi()
+
+    out = dp.delta_phidp(phi, rng=5.0)
+
+    assert isinstance(out, xr.Dataset)
+
+    for key in [
+        "phib",
+        "start_range",
+        "stop_range",
+        "first",
+        "first_idx",
+        "last",
+        "last_idx",
+        "dphi",
+        "center_span",
+    ]:
+        assert key in out
+
+    assert np.isfinite(out["start_range"].item())
+    assert np.isfinite(out["stop_range"].item())
+
+    np.testing.assert_allclose(
+        out["dphi"],
+        out["last"] - out["first"],
+    )
+
+
+def test_delta_phidp_finds_first_and_last_densest_windows():
+    phi = make_phi()
+
+    out = dp.delta_phidp(phi, rng=5.0)
+
+    assert out["start_range"].item() == 6
+    assert out["first_idx"].item() == 6
+
+    assert out["stop_range"].item() == 13
+    assert out["last_idx"].item() == 13
+
+    assert out["center_span"].item() == 4
+
+
+def test_delta_phidp():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:
+        phase = swp.PHIDP.where(swp.RHOHV > 0.9)
+
+    out = dp.delta_phidp(phase, rng=2000.0)
+    np.testing.assert_allclose(out["first"][0].values, -78.62331)
+    np.testing.assert_allclose(out["first_idx"][0].values, 44)
+    np.testing.assert_allclose(out["last"][0].values, -78.203064)
+    np.testing.assert_allclose(out["last_idx"][0].values, 569)
+    np.testing.assert_allclose(out["dphi"][0].values, 0.420242, rtol=1e-6)
+
+
+def test_delta_phidp_xarray():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:
+        phase = swp.PHIDP.where(swp.RHOHV > 0.9)
+
+    out = phase.wrl.dp.delta_phidp(rng=2000.0)
+    np.testing.assert_allclose(out["first"][0].values, -78.62331)
+    np.testing.assert_allclose(out["first_idx"][0].values, 44)
+    np.testing.assert_allclose(out["last"][0].values, -78.203064)
+    np.testing.assert_allclose(out["last_idx"][0].values, 569)
+    np.testing.assert_allclose(out["dphi"][0].values, 0.420242, rtol=1e-6)

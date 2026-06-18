@@ -384,13 +384,10 @@ def estimate_snr(dbz, rng, noise_level, gas_att):
     ----------
     dbz : array_like
         Equivalent radar reflectivity factor in dBZ.
-
     rng : array_like
         Range from radar in meters (m).
-
     noise_level : float or array_like
         Receiver noise level expressed in dB (consistent with dbz scaling).
-
     gas_att : float
         Effective gaseous attenuation coefficient in dB/km.
         This parameter represents a *two-way radar-path attenuation*
@@ -403,11 +400,12 @@ def estimate_snr(dbz, rng, noise_level, gas_att):
 
     Notes
     -----
-    The SNR is computed as:
+    The SNR is computed as::
 
         SNR = dbz - 20 * log10(rng_km) - noise_level - gas_att * rng_km
 
     where:
+
     - 20 * log10(rng) represents two-way geometric spreading loss
     - gas_att is an effective attenuation coefficient (dB/km),
       typically including round-trip propagation effects

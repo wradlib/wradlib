@@ -48,6 +48,7 @@ _AUTOSUMMARY = r"""
 """
 
 __all__ = [
+    "delta_phidp",
     "depolarization",
     "kdp_from_phidp",
     "phidp_kdp_vulpiani",
@@ -933,7 +934,8 @@ def _get_range_step(obj):
 
 
 def _get_bins_from_range(obj, rng):
-    return int(rng / _get_range_step(obj))
+    dr = _get_range_step(obj)
+    return max(1, int(np.ceil(rng / dr)))
 
 
 def _aggregate_sysphi(phi, n_lowest_rays):
@@ -985,24 +987,26 @@ def system_phidp_block(phidp, rng, n_lowest_rays=30):
     See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
 
+    rstep = _get_range_step(phidp)
+
     # binary mask of valid PHIDP bins
     phib = phidp.notnull().astype(np.int8)
 
     # required number of consecutive bins
     N = phidp.pipe(_get_bins_from_range, rng)
+    center_span = (N - 1) * rstep
 
     # count valid bins in rolling window
-    phib_sum = phib.rolling(range=N, center=True).sum(skipna=True)
+    phib_sum = phib.rolling(range=N, center=False).sum(skipna=True)
 
     # maximum number of valid bins per ray
     smax = phib_sum.max(dim="range", skipna=True)
+    # only windows that are fully valid
+    valid_mask = smax == N
 
     # derive selected range interval
-    rstep = _get_range_step(phib_sum)
-    center_range = phib_sum.idxmax(dim="range").where(smax == N)
-
-    start_range = center_range - (N // 2) * rstep
-    stop_range = start_range + N * rstep
+    stop_range = phib_sum.where(valid_mask).idxmax(dim="range")
+    start_range = stop_range - center_span
 
     start_range.name = "start_range"
     stop_range.name = "stop_range"
@@ -1078,26 +1082,25 @@ def system_phidp_window(phidp, rng, n_lowest_rays=30):
     --------
     See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
     """
+    rstep = _get_range_step(phidp)
 
     # binary mask of valid PHIDP bins
     phib = phidp.notnull().astype(np.int8)
 
     # window length in bins
     N = phidp.pipe(_get_bins_from_range, rng)
+    center_span = (N - 1) * rstep
 
     # count valid bins in rolling window
-    phib_sum = phib.rolling(range=N, center=True).sum(skipna=True)
+    phib_sum = phib.rolling(range=N, center=False).sum(skipna=True)
 
     # maximum valid-bin count per ray
     valid_bins = phib_sum.max(dim="range", skipna=True)
     valid_bins.name = "valid_bins"
 
     # derive selected interval
-    rstep = _get_range_step(phib_sum)
-    center_range = phib_sum.idxmax(dim="range")
-
-    start_range = center_range - (N // 2) * rstep
-    stop_range = start_range + N * rstep
+    stop_range = phib_sum.idxmax(dim="range")
+    start_range = stop_range - center_span
 
     start_range.name = "start_range"
     stop_range.name = "stop_range"
@@ -1287,8 +1290,137 @@ def system_phidp_hist(
     )
 
 
+def delta_phidp(phidp, rng, **kwargs):
+    r"""
+    Estimate :math:`\Phi_{DP}` statistics from the first and last densest range windows.
+
+    This function analyzes an xarray DataArray `phidp` defined along a coordinate
+    named ``range`` and identifies:
+
+    - the first range window spanning at least ``rng`` that contains the
+      maximum number of valid (non-NaN) observations, and
+    - the last such window when scanning from the far end of the ray.
+
+    For each window, the median phase value is computed. The phase difference
+    between the last and first window is returned together with diagnostic
+    information.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Input phase-like data indexed by a coordinate named ``range``.
+        NaN values are treated as missing data.
+    rng : float
+        Desired window width in the same units as ``phidp.range``.
+        The actual width used is the smallest whole-gate window that spans at
+        least ``rng``.
+
+    Keyword Arguments
+    -----------------
+    min_periods : int
+        Minimum number of valid samples required within a rolling window.
+        Defaults to the full window size.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        phib : xarray.DataArray
+            Rolling count of valid observations.
+        start_range : xarray.DataArray
+            Left edge of the first densest window.
+        stop_range : xarray.DataArray
+            Right edge of the last densest window.
+        first : xarray.DataArray
+            Median phase within the first densest window.
+        first_idx : xarray.DataArray
+            Index of the left edge of the first densest window.
+        last : xarray.DataArray
+            Median phase within the last densest window.
+        last_idx : xarray.DataArray
+            Index of the right edge of the last densest window.
+        dphi : xarray.DataArray
+            Difference between ``last`` and ``first``. Total :math:`\Delta \Phi_{DP}`.
+        center_span : float
+            center-to-center span of selected bins
+
+    Notes
+    -----
+    - Assumes uniform spacing along ``phi.range``.
+    - The rolling count is computed using ``center=False``.
+    - If multiple windows contain the same maximum number of valid
+      observations, the first occurrence is selected.
+    - ``start_range`` refers to the left edge of the first densest window.
+    - ``stop_range`` refers to the right edge of the last densest window.
+    - The actual window width may be slightly larger than ``rng`` because
+      whole range bins are used.
+    """
+
+    rstep = _get_range_step(phidp)
+
+    # smallest whole-gate window spanning at least rng
+    N = _get_bins_from_range(phidp, rng)
+
+    # distance between first and last gate centers
+    center_span = (N - 1) * rstep
+
+    # binary mask of valid data
+    phib = phidp.notnull().astype(np.int8)
+
+    min_periods = kwargs.get("min_periods", N)
+
+    # count valid bins in rolling window
+    # coordinate is anchored at the right edge of the window
+    phib_sum = phib.rolling(range=N, center=False, min_periods=min_periods).sum(
+        skipna=True
+    )
+
+    # first densest window
+    window_end = phib_sum.idxmax(dim="range")
+    window_end_idx = phib_sum.argmax(dim="range")
+
+    start_range = window_end - center_span
+    start_range_idx = window_end_idx - (N - 1)
+
+    first = phidp.where(
+        (phidp.range >= start_range) & (phidp.range <= window_end)
+    ).median("range", skipna=True)
+
+    # last densest window
+    rev = phib_sum[..., ::-1]
+
+    stop_range = rev.idxmax(dim="range")
+    stop_range_idx = phib_sum.sizes["range"] - rev.argmax(dim="range") - 1
+
+    last = phidp.where(
+        (phidp.range >= stop_range - center_span) & (phidp.range <= stop_range)
+    ).median("range", skipna=True)
+
+    return xr.Dataset(
+        dict(
+            phib=phib_sum,
+            start_range=start_range,
+            stop_range=stop_range,
+            first=first,
+            first_idx=start_range_idx,
+            last=last,
+            last_idx=stop_range_idx,
+            dphi=last - first,
+            center_span=center_span,
+        )
+    )
+
+
 class DpMethods(util.XarrayMethods):
     """wradlib xarray SubAccessor methods for DualPol."""
+
+    @util.docstring(delta_phidp)
+    def delta_phidp(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return delta_phidp(self, *args, **kwargs)
+        else:
+            return delta_phidp(self._obj, *args, **kwargs)
 
     @util.docstring(_depolarization_xarray)
     def depolarization(self, *args, **kwargs):
