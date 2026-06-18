@@ -51,13 +51,14 @@ __all__ = [
     "depolarization",
     "kdp_from_phidp",
     "phidp_kdp_vulpiani",
-    "texture",
-    "unfold_phi",
-    "unfold_phi_vulpiani",
+    "rhohv_noise_correction",
     "system_phidp_block",
     "system_phidp_window",
     "system_phidp_first",
     "system_phidp_hist",
+    "texture",
+    "unfold_phi",
+    "unfold_phi_vulpiani",
     "DpMethods",
 ]
 __doc__ = (__doc__ or "") + _AUTOSUMMARY.format("\n   ".join(__all__))
@@ -859,6 +860,74 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
     return out
 
 
+@singledispatch
+def rhohv_noise_correction(rho, snr):
+    r"""
+    Correct correlation coefficient (:math:`\rho_{HV}`) for receiver noise bias.
+
+    This function applies a noise-bias correction to the polarimetric
+    correlation coefficient assuming additive, uncorrelated noise in
+    the horizontal and vertical radar channels with equal noise power.
+
+    The correction is based on the covariance-based noise contamination
+    model for polarimetric radar observables :cite:`Gourley2006`, where
+    finite SNR leads to a downward bias in the estimated correlation
+    coefficient.
+
+    Parameters
+    ----------
+    rho : array_like
+        Measured complex correlation coefficient magnitude (:math:`\rho_{HV}`).
+    snr : array_like
+        Signal-to-noise ratio in dB for the corresponding radar channel.
+        Must be expressed in dB.
+
+    Returns
+    -------
+    rho_c : array_like
+        Noise-corrected correlation coefficient.
+
+    Notes
+    -----
+    The correction assumes additive, uncorrelated noise in the H and V
+    channels and approximates the effect of noise on the covariance-based
+    estimator of the correlation coefficient.
+
+    The formulation is a simplified SNR-dependent approximation derived
+    from the noise bias model presented in :cite:`Gourley2006`.
+
+    In the original formulation (Eq. 6), the bias correction includes
+    additional dependence on differential reflectivity (:math:`Z_{DR}`) and separate
+    noise contributions in the H and V channels.
+
+    The present implementation neglects :math:`Z_{DR}`-dependent terms and assumes
+    symmetric noise conditions, resulting in the approximation:
+
+        rho_c ≈ rho * sqrt(1 + 1 / SNR_lin)
+
+    where SNR_lin = 10^(SNR / 10).
+    """
+    rho_c = rho * np.sqrt(1.0 + 1.0 / 10.0 ** (snr * 0.1))
+    return rho_c
+
+
+@rhohv_noise_correction.register(xr.DataArray)
+def _rhohv_noise_correction_xarray(rho, snr):
+    dim0 = rho.wrl.util.dim0()
+    rho_c = xr.apply_ufunc(
+        rhohv_noise_correction,
+        rho,
+        snr,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    rho_c.attrs = sweep_vars_mapping["RHOHV"]
+    rho_c.name = f"{rho_c.attrs['short_name']}_NC"
+    return rho_c
+
+
 def _get_range_step(obj):
     return float(obj.range[1] - obj.range[0])
 
@@ -1248,6 +1317,13 @@ class DpMethods(util.XarrayMethods):
             return phidp_kdp_vulpiani(self, *args, **kwargs)
         else:
             return phidp_kdp_vulpiani(self._obj, *args, **kwargs)
+
+    @util.docstring(_rhohv_noise_correction_xarray)
+    def rhohv_noise_correction(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return rhohv_noise_correction(self, *args, **kwargs)
+        else:
+            return rhohv_noise_correction(self._obj, *args, **kwargs)
 
     @util.docstring(_texture_xarray)
     def texture(self, *args, **kwargs):

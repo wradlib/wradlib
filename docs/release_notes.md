@@ -13,6 +13,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * parameterise thresholds in unfold_phi and improve implementation ({pull}`770`) by {at}`enchilaDaSzen`
 * add algorithms to estimate system differential phase ({pull}`775`) by {at}`kmuehlbauer`
+* add algorithms to estimate SNR and correct RHOHV for noise ({pull}`776`) by {at}`kmuehlbauer`
 
 **Bugfixes**
 

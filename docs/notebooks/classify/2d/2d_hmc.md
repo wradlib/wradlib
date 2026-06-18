@@ -298,7 +298,7 @@ plt.show()
 ```{code-cell} python3
 bounds = np.arange(-0.5, prob.shape[0] + 0.6, 1)
 ticks = np.arange(0, prob.shape[0] + 1)
-cmap = mpl.cm.get_cmap("cubehelix", len(ticks))
+cmap = plt.get_cmap("cubehelix", len(ticks))
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 ```
 

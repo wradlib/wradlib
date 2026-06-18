@@ -30,6 +30,7 @@ __all__ = [
     "pulse_volume",
     "beam_block_frac",
     "cum_beam_block_frac",
+    "estimate_snr",
     "get_bb_ratio",
     "QualMethods",
 ]
@@ -39,6 +40,7 @@ from functools import singledispatch
 
 import numpy as np
 import xarray as xr
+from xradar.model import sweep_vars_mapping
 
 from wradlib.util import XarrayMethods, docstring
 
@@ -365,6 +367,83 @@ def _get_bb_ratio_xarray(obj):
     return obj.assign(bb_ratio=ratio, bb_mask=ibb)
 
 
+@singledispatch
+def estimate_snr(dbz, rng, noise_level, gas_att):
+    """
+    Estimate radar signal-to-noise ratio (SNR) from reflectivity.
+
+    This function reconstructs the radar SNR in dB space using reflectivity,
+    range-dependent geometric spreading loss, receiver noise level, and
+    gaseous attenuation.
+
+    The formulation follows standard radar equation scaling, where reflectivity
+    is converted into a received signal proxy and corrected for range and
+    propagation losses.
+
+    Parameters
+    ----------
+    dbz : array_like
+        Equivalent radar reflectivity factor in dBZ.
+
+    rng : array_like
+        Range from radar in meters (m).
+
+    noise_level : float or array_like
+        Receiver noise level expressed in dB (consistent with dbz scaling).
+
+    gas_att : float
+        Effective gaseous attenuation coefficient in dB/km.
+        This parameter represents a *two-way radar-path attenuation*
+        (i.e. round-trip effective loss).
+
+    Returns
+    -------
+    snr : array_like
+        Estimated signal-to-noise ratio in dB.
+
+    Notes
+    -----
+    The SNR is computed as:
+
+        SNR = dbz - 20 * log10(rng_km) - noise_level - gas_att * rng_km
+
+    where:
+    - 20 * log10(rng) represents two-way geometric spreading loss
+    - gas_att is an effective attenuation coefficient (dB/km),
+      typically including round-trip propagation effects
+    - noise_level represents receiver noise in dB
+
+    References
+    ----------
+    :cite:`Doviak1993`, :cite:`Bringi2001`, :cite:`ITU_P676`
+    """
+    rng_km = rng * 0.001
+    snr = dbz - 20 * np.log10(rng_km) - noise_level - gas_att * rng_km
+    return snr
+
+
+@estimate_snr.register(xr.DataArray)
+def _estimate_snr_xarray(dbz, noise_level, gas_att):
+    dim0 = dbz.wrl.util.dim0()
+    rng = dbz.range
+    snr = xr.apply_ufunc(
+        estimate_snr,
+        dbz,
+        rng,
+        noise_level,
+        gas_att,
+        input_core_dims=[[dim0, "range"], ["range"], [], []],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    name = getattr(dbz, "name", "") or ""
+    snr_name = "SNRV" if "DBZV" in name else "SNRH"
+    snr.attrs = sweep_vars_mapping[snr_name]
+    snr.name = snr.attrs["short_name"]
+    return snr
+
+
 class QualMethods(XarrayMethods):
     """wradlib xarray SubAccessor methods for Qual Methods."""
 
@@ -381,6 +460,13 @@ class QualMethods(XarrayMethods):
             return get_bb_ratio(self, *args, **kwargs)
         else:
             return get_bb_ratio(self._obj, *args, **kwargs)
+
+    @docstring(estimate_snr)
+    def estimate_snr(self, *args, **kwargs):
+        if not isinstance(self, QualMethods):
+            return estimate_snr(self, *args, **kwargs)
+        else:
+            return estimate_snr(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
