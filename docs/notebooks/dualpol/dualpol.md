@@ -19,5 +19,6 @@ This section provides a collection of example code snippets to process polarimet
 :hidden:
 :maxdepth: 2
 Differential Phase <phidp>
+System Differential Phase <system_phidp>
 Depolarization <depolarization>
 ```

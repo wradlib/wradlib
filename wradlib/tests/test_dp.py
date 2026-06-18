@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import wradlib_data
+import xarray as xr
 from scipy import integrate
 
 from wradlib import dp, util
@@ -311,3 +313,82 @@ def test_unfold_phi_xarray(gamic_swp):
 
 def test_unfold_phi_vulpiani_xarray(gamic_swp):
     gamic_swp.wrl.dp.unfold_phi_vulpiani(phidp="PHIDP", kdp="KDP")
+
+
+def test_system_phidp():
+    phidp = xr.DataArray(
+        [
+            np.nan,
+            np.nan,
+            128.0,
+            128.5,
+            129.0,
+            np.nan,
+            130.0,
+            130.5,
+            np.nan,
+            131.0,
+            131.5,
+            132.0,
+            132.5,
+            133.0,
+            133.5,
+            134.0,
+            134.5,
+            np.nan,
+            np.nan,
+        ],
+        dims=["range"],
+        coords={"range": np.arange(19) * 250.0},
+        name="PHIDP",
+    ).expand_dims(azimuth=[0])
+
+    rng = 2000.0
+
+    res_block = dp.system_phidp_block(
+        phidp,
+        rng=rng,
+        n_lowest_rays=1,
+    )
+
+    res_window = dp.system_phidp_window(
+        phidp,
+        rng=rng,
+        n_lowest_rays=1,
+    )
+
+    res_first = dp.system_phidp_first(
+        phidp,
+        n_valid_bins=9,
+        n_lowest_rays=1,
+    )
+
+    res_hist = dp.system_phidp_hist(
+        phidp,
+        n_lowest_rays=1,
+    )
+
+    assert res_block["sysphi_ray"].item() == 132.75
+    assert res_block["sysphi"].item() == 132.75
+    assert res_window["sysphi_ray"].item() == 132.75
+    assert res_window["sysphi"].item() == 132.75
+    assert res_first["sysphi_ray"].item() == 130.5
+    assert res_first["sysphi"].item() == 130.5
+    assert res_hist["sysphi_peak"].item() == pytest.approx(128.55)
+    assert res_hist["sysphi_first"].item() == pytest.approx(128.05)
+
+
+def test_system_phidp_xarray():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:
+        phase = swp.PHIDP.where(swp.RHOHV > 0.9)
+    res_block = phase.wrl.dp.system_phidp_block(rng=2000.0)
+    res_window = phase.wrl.dp.system_phidp_window(rng=2000.0)
+    res_first = phase.wrl.dp.system_phidp_first()
+    res_hist = phase.wrl.dp.system_phidp_hist()
+
+    assert res_block["sysphi"].item() == pytest.approx(-80.128479)
+    assert res_window["sysphi"].item() == pytest.approx(-80.315254)
+    assert res_first["sysphi"].item() == pytest.approx(-80.651726)
+    assert res_hist["sysphi_peak"].item() == pytest.approx(-80.55)
+    assert res_hist["sysphi_first"].item() == pytest.approx(-81.6)

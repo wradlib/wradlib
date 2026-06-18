@@ -72,24 +72,25 @@ pip install -e .
 sudo apt update && sudo apt upgrade
 sudo apt install build-essential
 sudo apt install gdal-bin libgdal-dev proj-data python3 python3-dev
-sudo snap install astral-uv
 ```
 
 ```bash
 sudo dnf update
 sudo dnf install gcc gcc-c++ make automake autoconf libtool
 sudo dnf install gdal gdal-devel hdf5-devel netcdf-devel proj proj-data-us proj-devel --setopt=install_weak_deps=False
-sudo dnf install python3 python3-devel uv
+sudo dnf install python3 python3-devel
 ```
 
 ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 echo "alias activate='source .venv/bin/activate'" >> $HOME/.bashrc
 exit
 ```
 
 ```bash
 cd wradlib
-uv venv
+uv python install 3.14
+uv venv --python 3.14
 activate
 GDAL_VERSION=$(gdal-config --version)
 uv pip install -e .[dev,doc] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
@@ -211,9 +212,9 @@ git checkout -b my-branch
 python -m pytest --testmon
 ```
 
-### Check code quality
+### Install code quality check
 ```bash
-python -m pre_commit run
+python -m pre_commit install
 ```
 
 ### Commit your change folowing commit history (git log)
@@ -226,7 +227,7 @@ git commit -a -m "describe your changes"
 git push origin my-branch
 ```
 
-### Reset your branch and make new changes
+### Reset your branch and make additional changes
 ```bash
 git checkout my-branch
 git rebase main
