@@ -368,12 +368,7 @@ def _get_bb_ratio_xarray(obj):
 
 
 @singledispatch
-def estimate_snr(*args, **kwargs):
-    pass
-
-
-@estimate_snr.register(np.ndarray)
-def _estimate_snr_numpy(dbz, rng, noise_level, gas_att):
+def estimate_snr(dbz, rng, noise_level, gas_att):
     """
     Estimate radar signal-to-noise ratio (SNR) from reflectivity.
 
@@ -432,7 +427,7 @@ def _estimate_snr_xarray(dbz, noise_level, gas_att):
     dim0 = dbz.wrl.util.dim0()
     rng = dbz.range
     snr = xr.apply_ufunc(
-        _estimate_snr_numpy,
+        estimate_snr,
         dbz,
         rng,
         noise_level,
@@ -466,7 +461,7 @@ class QualMethods(XarrayMethods):
         else:
             return get_bb_ratio(self._obj, *args, **kwargs)
 
-    @docstring(_estimate_snr_xarray)
+    @docstring(estimate_snr)
     def estimate_snr(self, *args, **kwargs):
         if not isinstance(self, QualMethods):
             return estimate_snr(self, *args, **kwargs)

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from wradlib import qual
 
@@ -107,3 +108,70 @@ def test_cum_beam_block_frac(bb_data):
     """
     cbb = qual.cum_beam_block_frac(bb_data.sample_pbb)
     assert np.allclose(cbb, bb_data.sample_cbb)
+
+
+def test_estimate_snr_numpy():
+    dbz = np.array([20.0, 30.0, 40.0])
+    rng = np.array([1000.0, 10000.0, 50000.0])  # m
+    noise_level = 5.0
+    gas_att = 0.01  # dB/km
+
+    rng_km = rng * 0.001
+    expected = dbz - 20.0 * np.log10(rng_km) - noise_level - gas_att * rng_km
+
+    result = qual._estimate_snr_numpy(
+        dbz,
+        rng=rng,
+        noise_level=noise_level,
+        gas_att=gas_att,
+    )
+
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_estimate_snr_numpy_scalar():
+    dbz = 30.0
+    rng = 1000.0  # 1 km
+    noise_level = 5.0
+    gas_att = 0.1
+
+    # 20*log10(1 km) = 0
+    expected = 30.0 - 0.0 - 5.0 - 0.1 * 1.0
+
+    result = qual._estimate_snr_numpy(
+        dbz,
+        rng=rng,
+        noise_level=noise_level,
+        gas_att=gas_att,
+    )
+
+    assert result == expected
+
+
+def test_estimate_snr_xarray():
+    dbz = xr.DataArray(
+        [[20.0, 30.0, 40.0]],
+        dims=(
+            "azimuth",
+            "range",
+        ),
+        coords={"range": [1000.0, 10000.0, 50000.0]},
+    )
+
+    rng = dbz.range.values
+    noise_level = 5.0
+    gas_att = 0.01
+
+    result = qual._estimate_snr_xarray(
+        dbz,
+        noise_level=noise_level,
+        gas_att=gas_att,
+    )
+
+    rng_km = rng * 0.001
+    expected = dbz.values - 20.0 * np.log10(rng_km) - noise_level - gas_att * rng_km
+
+    assert isinstance(result, xr.DataArray)
+    assert result.dims == dbz.dims
+    assert result.coords.keys() == dbz.coords.keys()
+    np.testing.assert_equal(result.values, expected)

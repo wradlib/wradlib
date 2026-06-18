@@ -392,3 +392,44 @@ def test_system_phidp_xarray():
     assert res_first["sysphi"].item() == pytest.approx(-80.651726)
     assert res_hist["sysphi_peak"].item() == pytest.approx(-80.55)
     assert res_hist["sysphi_first"].item() == pytest.approx(-81.6)
+
+
+def test_rhohv_noise_correction_numpy():
+    rho = np.array([0.95, 0.98, 0.99])
+    snr = np.array([0.0, 10.0, 20.0])
+
+    expected = rho * np.sqrt(1.0 + 1.0 / 10.0 ** (snr * 0.1))
+
+    result = dp.rhohv_noise_correction(rho, snr)
+
+    np.testing.assert_equal(result, expected)
+
+
+def test_rhohv_noise_correction_xarray():
+    rho = xr.DataArray(
+        np.array([[0.95, 0.98], [0.96, 0.99]]),
+        dims=("azimuth", "range"),
+        coords={
+            "azimuth": [0, 1],
+            "range": [1000.0, 2000.0],
+        },
+        name="RHOHV",
+    )
+
+    snr = xr.DataArray(
+        np.array([[10.0, 20.0], [15.0, 25.0]]),
+        dims=("azimuth", "range"),
+        coords=rho.coords,
+    )
+
+    result = dp.rhohv_noise_correction(rho, snr)
+
+    expected = xr.DataArray(
+        rho.values * np.sqrt(1.0 + 1.0 / 10.0 ** (snr.values * 0.1)),
+        dims=rho.dims,
+        coords=rho.coords,
+    )
+
+    xr.testing.assert_allclose(result, expected)
+
+    assert result.name.endswith("_NC")

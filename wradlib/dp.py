@@ -51,13 +51,14 @@ __all__ = [
     "depolarization",
     "kdp_from_phidp",
     "phidp_kdp_vulpiani",
-    "texture",
-    "unfold_phi",
-    "unfold_phi_vulpiani",
+    "rhohv_noise_correction",
     "system_phidp_block",
     "system_phidp_window",
     "system_phidp_first",
     "system_phidp_hist",
+    "texture",
+    "unfold_phi",
+    "unfold_phi_vulpiani",
     "DpMethods",
 ]
 __doc__ = (__doc__ or "") + _AUTOSUMMARY.format("\n   ".join(__all__))
@@ -862,7 +863,7 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
 @singledispatch
 def rhohv_noise_correction(rho, snr):
     """
-    Correct correlation coefficient (rho_hv) for receiver noise bias.
+    Correct correlation coefficient (:math:`\rho_{HV}`) for receiver noise bias.
 
     This function applies a noise-bias correction to the polarimetric
     correlation coefficient assuming additive, uncorrelated noise in
@@ -876,8 +877,7 @@ def rhohv_noise_correction(rho, snr):
     Parameters
     ----------
     rho : array_like
-        Measured complex correlation coefficient magnitude (rho_hv).
-
+        Measured complex correlation coefficient magnitude (:math:`\rho_{HV}`).
     snr : array_like
         Signal-to-noise ratio in dB for the corresponding radar channel.
         Must be expressed in dB.
@@ -897,10 +897,10 @@ def rhohv_noise_correction(rho, snr):
     from the noise bias model presented in :cite:`Gourley2006`.
 
     In the original formulation (Eq. 6), the bias correction includes
-    additional dependence on differential reflectivity (ZDR) and separate
+    additional dependence on differential reflectivity (:math:`Z_{DR}`) and separate
     noise contributions in the H and V channels.
 
-    The present implementation neglects ZDR-dependent terms and assumes
+    The present implementation neglects :math:`Z_{DR}`-dependent terms and assumes
     symmetric noise conditions, resulting in the approximation:
 
         rho_c ≈ rho * sqrt(1 + 1 / SNR_lin)
@@ -926,6 +926,8 @@ def _rhohv_noise_correction_xarray(rho, snr):
     rho_c.attrs = sweep_vars_mapping["RHOHV"]
     rho_c.name = f"{rho_c.attrs['short_name']}_NC"
     return rho_c
+
+
 def _get_range_step(obj):
     return float(obj.range[1] - obj.range[0])
 
