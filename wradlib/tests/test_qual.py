@@ -119,7 +119,7 @@ def test_estimate_snr_numpy():
     rng_km = rng * 0.001
     expected = dbz - 20.0 * np.log10(rng_km) - noise_level - gas_att * rng_km
 
-    result = qual._estimate_snr_numpy(
+    result = qual.estimate_snr(
         dbz,
         rng=rng,
         noise_level=noise_level,
@@ -138,7 +138,7 @@ def test_estimate_snr_numpy_scalar():
     # 20*log10(1 km) = 0
     expected = 30.0 - 0.0 - 5.0 - 0.1 * 1.0
 
-    result = qual._estimate_snr_numpy(
+    result = qual.estimate_snr(
         dbz,
         rng=rng,
         noise_level=noise_level,
