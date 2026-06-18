@@ -54,6 +54,10 @@ __all__ = [
     "texture",
     "unfold_phi",
     "unfold_phi_vulpiani",
+    "system_phidp_block",
+    "system_phidp_window",
+    "system_phidp_first",
+    "system_phidp_hist",
     "DpMethods",
 ]
 __doc__ = (__doc__ or "") + _AUTOSUMMARY.format("\n   ".join(__all__))
@@ -66,6 +70,8 @@ from scipy import integrate, interpolate
 from xradar.model import sweep_vars_mapping
 
 from wradlib import trafo, util
+
+xhist = util.import_optional("xhistogram.xarray")
 
 
 @singledispatch
@@ -853,6 +859,365 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
     return out
 
 
+def _get_range_step(obj):
+    return float(obj.range[1] - obj.range[0])
+
+
+def _get_bins_from_range(obj, rng):
+    return int(rng / _get_range_step(obj))
+
+
+def _aggregate_sysphi(phi, n_lowest_rays):
+    valid_phi = phi.where(phi.notnull(), drop=True)
+    return valid_phi.sortby(valid_phi)[:n_lowest_rays].median(skipna=True)
+
+
+def system_phidp_block(phidp, rng, n_lowest_rays=30):
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) from contiguous
+    valid :math:`\Phi_{DP}` segments along radar rays.
+
+    The algorithm searches each ray for a sequence of N consecutive valid
+    :math:`\Phi_{DP}` bins, where N is derived from the requested range length (`rng`).
+    For each ray, the median :math:`\Phi_{DP}` within the identified segment is used as
+    a ray-wise :math:`\Phi_{DP}^{sys}` estimate. The final :math:`\Phi_{DP}^{sys}`
+    estimate is computed as the median of the `n_lowest_rays` smallest ray-wise estimates.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field containing a ``range`` dimension.
+    rng : float
+        Range length (m) used to determine the required number of consecutive
+        valid bins.
+    n_lowest_rays : int, optional
+        Number of lowest ray-wise :math:`\Phi_{DP}` estimates used to derive the final
+        :math:`\Phi_{DP}^{sys}` estimate. Default is 30.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
+        - ``start_range`` : Start range of the selected valid segment.
+        - ``stop_range`` : Stop range of the selected valid segment.
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
+          interval.
+
+    Notes
+    -----
+    Rays that do not contain N consecutive valid :math:`\Phi_{DP}` bins receive NaN
+    values for the corresponding outputs.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
+    """
+
+    # binary mask of valid PHIDP bins
+    phib = phidp.notnull().astype(np.int8)
+
+    # required number of consecutive bins
+    N = phidp.pipe(_get_bins_from_range, rng)
+
+    # count valid bins in rolling window
+    phib_sum = phib.rolling(range=N, center=True).sum(skipna=True)
+
+    # maximum number of valid bins per ray
+    smax = phib_sum.max(dim="range", skipna=True)
+
+    # derive selected range interval
+    rstep = _get_range_step(phib_sum)
+    center_range = phib_sum.idxmax(dim="range").where(smax == N)
+
+    start_range = center_range - (N // 2) * rstep
+    stop_range = start_range + N * rstep
+
+    start_range.name = "start_range"
+    stop_range.name = "stop_range"
+
+    # select PHIDP values within identified interval
+    phi = phidp.where((phidp.range >= start_range) & (phidp.range <= stop_range))
+    valid_bins = phi.count("range")
+    valid_bins.name = "valid_bins"
+
+    # ray-wise estimate
+    sysphi_ray = phi.median(dim="range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
+
+    # global estimate from lowest ray-wise values
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
+
+    return xr.merge(
+        [
+            sysphi_ray,
+            sysphi,
+            start_range,
+            stop_range,
+            valid_bins,
+        ],
+        compat="no_conflicts",
+    )
+
+
+def system_phidp_window(phidp, rng, n_lowest_rays=30):
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) from the
+    range interval with the highest valid-data coverage.
+
+    For each ray, a rolling window of length ``rng`` is evaluated and
+    the interval containing the maximum number of valid :math:`\Phi_{DP}` bins is
+    selected. The median :math:`\Phi_{DP}` within this interval is used as a ray-wise
+    :math:`\Phi_{DP}^{sys}` estimate. The final :math:`\Phi_{DP}^{sys}` estimate is computed as
+    the median of the ``n_lowest_rays`` smallest ray-wise estimates.
+
+    Unlike ``system_phidp_block``, this method does not require all
+    bins within the selected interval to be valid. It therefore provides
+    estimates for rays that contain gaps in :math:`\Phi_{DP}` coverage.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field containing a ``range`` dimension.
+    rng : float
+        Physical range length (m) used to determine the rolling window size.
+    n_lowest_rays : int, optional
+        Number of lowest ray-wise estimates used to derive the final
+        :math:`\Phi_{DP}^{sys}` estimate. Default is 30.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
+        - ``start_range`` : Start range of the selected interval.
+        - ``stop_range`` : Stop range of the selected interval.
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
+          interval.
+
+    Notes
+    -----
+    The selected interval maximizes the count of valid :math:`\Phi_{DP}` bins within
+    the specified window length. No minimum coverage threshold is applied.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
+    """
+
+    # binary mask of valid PHIDP bins
+    phib = phidp.notnull().astype(np.int8)
+
+    # window length in bins
+    N = phidp.pipe(_get_bins_from_range, rng)
+
+    # count valid bins in rolling window
+    phib_sum = phib.rolling(range=N, center=True).sum(skipna=True)
+
+    # maximum valid-bin count per ray
+    valid_bins = phib_sum.max(dim="range", skipna=True)
+    valid_bins.name = "valid_bins"
+
+    # derive selected interval
+    rstep = _get_range_step(phib_sum)
+    center_range = phib_sum.idxmax(dim="range")
+
+    start_range = center_range - (N // 2) * rstep
+    stop_range = start_range + N * rstep
+
+    start_range.name = "start_range"
+    stop_range.name = "stop_range"
+
+    # extract interval and compute ray-wise estimate
+    phi = phidp.where((phidp.range >= start_range) & (phidp.range <= stop_range))
+
+    sysphi_ray = phi.median(dim="range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
+
+    # derive global estimate
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
+
+    return xr.merge(
+        [
+            sysphi_ray,
+            sysphi,
+            start_range,
+            stop_range,
+            valid_bins,
+        ],
+        compat="no_conflicts",
+    )
+
+
+def system_phidp_first(phidp, n_valid_bins=10, n_lowest_rays=30):
+    r"""
+    Estimate :math:`\Phi_{DP}^{sys}` using the first N valid :math:`\Phi_{DP}` bins along each ray.
+
+    For each ray, the first `n_valid_bins` valid (non-NaN) :math:`\Phi_{DP}` values are
+    selected, regardless of whether they are contiguous in range. The median
+    of these values is computed to obtain a ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+    The final :math:`\Phi_{DP}^{sys}` is the median of the `n_lowest_rays` smallest
+    ray-wise estimates.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field with a ``range`` dimension.
+    n_valid_bins : int, optional
+        Number of valid :math:`\Phi_{DP}` samples to use per ray.
+    n_lowest_rays : int, optional
+        Number of lowest ray-wise estimates used for the final :math:`\Phi_{DP}^{sys}` value.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        - ``sysphi_ray`` : ray-wise :math:`\Phi_{DP}^{sys}` estimate.
+        - ``sysphi`` : global :math:`\Phi_{DP}^{sys}` estimate.
+        - ``start_range`` : Start range of the selected interval.
+        - ``stop_range`` : Stop range of the selected interval.
+        - ``valid_bins`` : Number of valid :math:`\Phi_{DP}` bins within the selected
+          interval.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
+    """
+
+    # mask valid data
+    phib = phidp.notnull().astype(np.int8)
+
+    # cumulative count of valid bins along range
+    phib_cumsum = phib.cumsum("range", skipna=True)
+
+    # select first N valid bins per ray
+    mask = phib.astype(bool) & (phib_cumsum <= n_valid_bins)
+    phi = phidp.where(mask)
+
+    # diagnostics
+    valid_bins = phi.count("range")
+    valid_bins.name = "valid_bins"
+
+    start_range = phidp.range.where(mask).min("range", skipna=True)
+    start_range.name = "start_range"
+
+    stop_range = phidp.range.where(mask).max("range", skipna=True)
+    stop_range.name = "stop_range"
+
+    # ray-wise statistic
+    sysphi_ray = phi.median("range", skipna=True)
+    sysphi_ray.name = "sysphi_ray"
+
+    # global statistic (robust low-end aggregation)
+    sysphi = _aggregate_sysphi(sysphi_ray, n_lowest_rays)
+    sysphi.name = "sysphi"
+
+    return xr.merge(
+        [
+            sysphi_ray,
+            sysphi,
+            start_range,
+            stop_range,
+            valid_bins,
+        ],
+        compat="no_conflicts",
+    )
+
+
+def system_phidp_hist(
+    phidp, bins=(-180, 180, 0.1), window=11, threshold=0.5, n_lowest_rays=30
+):
+    r"""
+    Estimate the system differential phase (:math:`\Phi_{DP}^{sys}`) offset from
+    :math:`\Phi_{DP}` histograms.
+
+    A histogram of :math:`\Phi_{DP}` values is computed for each azimuth ray and smoothed
+    along the histogram bin dimension. Two ray-wise estimates of the :math:`\Phi_{DP}^{sys}` are derived:
+
+    - ``sysphi_peak_ray``: location of the histogram maximum.
+    - ``sysphi_first_ray``: first histogram bin exceeding a fraction of the
+      normalized peak count.
+
+    Sweep-level estimates (``sysphi_peak`` and ``sysphi_first``) are obtained
+    by aggregating the lowest ``n_lowest_rays`` ray-wise estimates.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field with dimensions including ``range`` and
+        typically ``azimuth``.
+    bins : tuple, optional
+        Histogram bin specification passed to ``np.arange`` as
+        ``(start, stop, step)``. Default is ``(-180, 180, 0.1)``
+    window : int, optional
+        Size of the moving-average smoothing window applied to the histogram
+        along the bin dimension. Default is ``11``.
+    threshold : float, optional
+        Relative threshold applied to the normalized histogram. The first bin
+        exceeding this threshold is used to derive ``sysphi_first_ray``.
+        Default is ``0.5``.
+    n_lowest_rays : int, optional
+        Number of lowest ray-wise estimates used when aggregating the
+        sweep-level :math:`\Phi_{DP}^{sys}` estimate. Default is ``30``.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset containing:
+
+        - ``sysphi_hist``: :math:`\Phi_{DP}` histogram for each ray.
+        - ``sysphi_peak_ray``: ray-wise estimate from the histogram peak.
+        - ``sysphi_first_ray``: ray-wise estimate from the threshold crossing.
+        - ``sysphi_peak``: sweep-level estimate aggregated from
+          ``sysphi_peak_ray``.
+        - ``sysphi_first``: sweep-level estimate aggregated from
+          ``sysphi_first_ray``.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - System Differential Phase <system_phidp_main_header>`.
+    """
+    sysphi_hist = xhist.histogram(phidp, dim=("range",), bins=[np.arange(*bins)])
+    sysphi_hist.name = "sysphi_hist"
+    hist_dim = next(dim for dim in sysphi_hist.dims if dim.endswith("_bin"))
+    sysphi_hist = sysphi_hist.rename({hist_dim: "bin"})
+
+    phi_hist_smooth = sysphi_hist.rolling(bin=window, center=True).mean()
+    sysphi_peak_ray = phi_hist_smooth.idxmax("bin")
+    sysphi_peak_ray.name = "sysphi_peak_ray"
+
+    hist_max = phi_hist_smooth.max(dim="bin")
+    phi_hist_norm = phi_hist_smooth / hist_max.where(hist_max > 0)
+    phi_hist_thresh = phi_hist_norm.where(phi_hist_norm > threshold)
+
+    sysphi_first_ray = phi_hist_thresh.bin.where(phi_hist_thresh.notnull()).min("bin")
+    sysphi_first_ray.name = "sysphi_first_ray"
+
+    sysphi_peak = _aggregate_sysphi(sysphi_peak_ray, n_lowest_rays)
+    sysphi_peak.name = "sysphi_peak"
+
+    sysphi_first = _aggregate_sysphi(sysphi_first_ray, n_lowest_rays)
+    sysphi_first.name = "sysphi_first"
+
+    return xr.merge(
+        [
+            sysphi_hist,
+            sysphi_peak_ray,
+            sysphi_first_ray,
+            sysphi_peak,
+            sysphi_first,
+        ],
+        compat="no_conflicts",
+    )
+
+
 class DpMethods(util.XarrayMethods):
     """wradlib xarray SubAccessor methods for DualPol."""
 
@@ -904,6 +1269,34 @@ class DpMethods(util.XarrayMethods):
             return unfold_phi_vulpiani(self, *args, **kwargs)
         else:
             return unfold_phi_vulpiani(self._obj, *args, **kwargs)
+
+    @util.docstring(system_phidp_block)
+    def system_phidp_block(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return system_phidp_block(self, *args, **kwargs)
+        else:
+            return system_phidp_block(self._obj, *args, **kwargs)
+
+    @util.docstring(system_phidp_window)
+    def system_phidp_window(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return system_phidp_window(self, *args, **kwargs)
+        else:
+            return system_phidp_window(self._obj, *args, **kwargs)
+
+    @util.docstring(system_phidp_first)
+    def system_phidp_first(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return system_phidp_first(self, *args, **kwargs)
+        else:
+            return system_phidp_first(self._obj, *args, **kwargs)
+
+    @util.docstring(system_phidp_hist)
+    def system_phidp_hist(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return system_phidp_hist(self, *args, **kwargs)
+        else:
+            return system_phidp_hist(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ dependencies:
   - notebook
   - numpy
   - matplotlib-base
+  - open-radar-data
   - pint
   - pint-xarray
   - pip
@@ -44,4 +45,5 @@ dependencies:
   - wradlib_data
   - xarray >=2026.4.0
   - xradar >=0.12.0
+  - xhistogram
   - xmltodict
