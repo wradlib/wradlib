@@ -794,7 +794,7 @@ def specific_attenuation_zphi(phidp, dbz, alpha, b, rng=2000.0):
 
     Notes
     -----
-    - Uses `delta_phidp` to estimate total differential phase shift.
+    - Uses :func:`~wradlib.dp.delta_phidp` to estimate total differential phase shift.
     - Negative phase shifts are clamped to a small positive value for stability.
     - Reflectivity is converted from dBZ to linear units before integration.
     - Assumes identical range coordinate system for `phidp` and `dbz`.
