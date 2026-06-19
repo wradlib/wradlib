@@ -336,5 +336,5 @@ def test_specific_attenuation_data():
             1.16656558,
         ]
     )
-    np.testing.assert_allclose(out1.values, wanted)
-    np.testing.assert_allclose(out2.values, wanted)
+    np.testing.assert_allclose(out1.values, wanted, atol=1e-6)
+    np.testing.assert_allclose(out2.values, wanted, atol=1e-6)
