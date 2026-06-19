@@ -19,7 +19,7 @@ The ZPHI method provides a physically constrained approach to estimate specific 
 
 In this notebook, we demonstrate a complete ZPHI processing chain including:
 
-- estimation of total differential phase shift ({math}`\Delta \Phi_{DP}`)
+- estimation of total differential phase shift ({math}`\Delta \Phi_{DP}^{tot}`)
 - reconstruction of {math}`\Phi_{DP}^{cal}` from {math}`K_{DP}` (when needed)
 - retrieval of specific attenuation ({math}`A_H` / {math}`A_V`)
 
@@ -82,7 +82,7 @@ kdp_ah.attrs = swp.KDP.attrs
 ```
 
 ```{code-cell} ipython3
-kdp_ah.wrl.vis.plot(vmax=2)
+kdp_ah.wrl.vis.plot(vmax=5)
 ```
 
 ## Recalculate {math}`\Phi_{DP}^{cal}`
@@ -94,7 +94,7 @@ phical.attrs = swp.PHIDP.attrs
 display(phical)
 ```
 
-## Plot {math}`\PHI_{DP}^{cal}`
+## Plot {math}`\Phi_{DP}^{cal}`
 
 ```{code-cell} ipython3
 phical.wrl.vis.plot()

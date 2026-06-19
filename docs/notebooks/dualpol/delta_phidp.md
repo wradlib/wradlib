@@ -22,23 +22,23 @@ from IPython.display import display
 warnings.filterwarnings("ignore")
 ```
 
-The total differential phase shift, denoted as {math}`\Delta Phi_{DP}^{tot}`, is a path-integrated radar variable that represents the accumulated change in differential phase ({math}`\Phi_{DP}`) along a radar ray between two range locations.
+The total differential phase shift, denoted as {math}`\Delta \Phi_{DP}^{tot}`, is a path-integrated radar variable that represents the accumulated change in differential phase ({math}`\Phi_{DP}`) along a radar ray between two range locations.
 
 Unlike reflectivity,{math}`\Phi_{DP}` is a propagation phase quantity that increases monotonically with range in precipitation and is largely unaffected by attenuation and calibration biases. This makes it a robust constraint for attenuation and rainfall microphysics retrievals.
 
-In the ZPHI framework, {math}`\Delta Phi_{DP}^{tot}` serves as the key normalization quantity linking local reflectivity structure to integrated propagation effects.
+In the ZPHI framework, {math}`\Delta \Phi_{DP}^{tot}` serves as the key normalization quantity linking local reflectivity structure to integrated propagation effects.
 
-{math}`\Delta Phi_{DP}` represents the net phase shift induced by hydrometeors along a selected radar path segment:
+{math}`\Delta \Phi_{DP}` represents the net phase shift induced by hydrometeors along a selected radar path segment:
 
 $\begin{equation}
-f\Delta\Phi_{DP} = \Phi_{DP}(r_2) - \Phi_{DP}(r_1)
+\Delta\Phi_{DP} = \Phi_{DP}(r_2) - \Phi_{DP}(r_1)
 \tag{1}
 \end{equation}$
 
 where:
 
 - {math}`r_1` - start of the selected valid radar interval
-- {math}`r_1` - end of the selected valid radar interval
+- {math}`r_2` - end of the selected valid radar interval
 
 This interval is not fixed a priori, but is determined dynamically based on data quality and spatial continuity.
 
@@ -77,13 +77,13 @@ swp.PHIDP.wrl.vis.plot(vmin=-100, vmax=50)
 
 This algorithm is described in detail in {cite}`Testud2000`, {cite}`Ryzhkov2014`, and {cite}`Diederich2015`.
 
-Before computing {math}`\Delta Phi_{DP}`, a physically meaningful segment of the radar ray is identified:
+Before computing {math}`\Delta \Phi_{DP}`, a physically meaningful segment of the radar ray is identified:
 
 - invalid or missing observations are masked
 - a sliding window is used to estimate local data density
 - the “densest” contiguous region of valid Φ_{DP} is selected
 
-This ensures that {math}`\Delta Phi_{DP}^{tot}` is computed only where phase information is reliable.
+This ensures that {math}`\Delta \Phi_{DP}^{tot}` is computed only where phase information is reliable.
 
 ## Mask source data
 
