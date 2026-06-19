@@ -11,6 +11,7 @@ kernelspec:
   name: python3
 ---
 
+(zphi_main_header)=
 # Specific Attenuation via ZPHI method
 
 Weather radar reflectivity measurements are affected by propagation effects, most importantly attenuation due to hydrometeors along the radar beam. In X-band and C-band radar applications, this can lead to significant underestimation of reflectivity at long range and in heavy precipitation.
@@ -62,6 +63,10 @@ plt.title("Raw Reflectivity (dBZ)")
 ```
 
 ## Calculate specific attenuation AH
+
+```{seealso}
+{func}`wradlib.atten.specific_attenuation_zphi`
+```
 
 ```{code-cell} ipython3
 alpha = 0.28

@@ -798,6 +798,10 @@ def specific_attenuation_zphi(phidp, dbz, alpha, b, rng=2000.0):
     - Negative phase shifts are clamped to a small positive value for stability.
     - Reflectivity is converted from dBZ to linear units before integration.
     - Assumes identical range coordinate system for `phidp` and `dbz`.
+
+    Examples
+    --------
+    See :ref:`Core Features - Attenuation - Specific Attenuation via ZPHI method <zphi_main_header>`.
     """
 
     # retrieve delta phidp

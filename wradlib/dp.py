@@ -1355,6 +1355,10 @@ def delta_phidp(phidp, rng, **kwargs):
     - ``stop_range`` refers to the right edge of the last densest window.
     - The actual window width may be slightly larger than ``rng`` because
       whole range bins are used.
+
+    Examples
+    --------
+    See :ref:`Core Features - Dual-Pol - Total Differential Phase Shift <delta_phidp_main_header>`.
     """
 
     rstep = _get_range_step(phidp)

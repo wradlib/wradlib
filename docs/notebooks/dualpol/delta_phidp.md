@@ -81,7 +81,7 @@ Before computing {math}`\Delta \Phi_{DP}`, a physically meaningful segment of th
 
 - invalid or missing observations are masked
 - a sliding window is used to estimate local data density
-- the “densest” contiguous region of valid Φ_{DP} is selected
+- the “densest” contiguous region of valid {math}`\Phi_{DP}` is selected
 
 This ensures that {math}`\Delta \Phi_{DP}^{tot}` is computed only where phase information is reliable.
 
@@ -98,6 +98,10 @@ dbzmask = swp.DBZH.where(mask)
 ## Estimate ray-based location and values of start and stop window
 
 We choose 2000m window for estimation of start and stop values.
+
+```{seealso}
+{func}`wradlib.dp.delta_phidp`
+```
 
 ```{code-cell} ipython3
 dphi = phimask.wrl.dp.delta_phidp(rng=2000.)
