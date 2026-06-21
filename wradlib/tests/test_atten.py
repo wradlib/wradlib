@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import wradlib_data
+import xarray as xr
 
 from wradlib import atten, io
 
@@ -192,3 +194,147 @@ def test_bisect_reference_attenuation(att_data):
     assert np.allclose(result, goodresult)
     assert np.allclose(amid, goodamid)
     assert np.allclose(b, goodb)
+
+
+@pytest.fixture
+def simple_phidp_dbz():
+    r = np.arange(200) * 100.0
+
+    phidp = xr.DataArray(
+        np.linspace(0, 30, 200),
+        coords={"range": r},
+        dims="range",
+    )
+
+    phidp[60:120] += 10.0
+    phidp[150] = np.nan
+
+    dbz = xr.DataArray(
+        40 - 0.05 * np.arange(200),
+        coords={"range": r},
+        dims="range",
+        name="DBZH",
+    )
+
+    return phidp, dbz
+
+
+def test_specific_attenuation_output_structure(simple_phidp_dbz):
+    phidp, dbz = simple_phidp_dbz
+
+    out = atten.specific_attenuation_zphi(phidp, dbz, alpha=0.3, b=0.6, rng=2000.0)
+
+    assert isinstance(out, xr.DataArray)
+    assert out.dims == ("range",)
+
+    assert "units" in out.attrs
+    assert out.attrs["units"] == "dB/km"
+    assert "standard_name" in out.attrs
+    assert "long_name" in out.attrs
+    assert "short_name" in out.attrs
+
+
+def test_specific_attenuation_finite(simple_phidp_dbz):
+    phidp, dbz = simple_phidp_dbz
+
+    out = atten.specific_attenuation_zphi(phidp, dbz, alpha=0.3, b=0.6, rng=2000.0)
+
+    assert np.all(np.isfinite(out.values))
+    assert np.nanmin(out.values) >= 0
+
+
+def test_specific_attenuation_alpha_broadcast(simple_phidp_dbz):
+    phidp, dbz = simple_phidp_dbz
+
+    out_scalar = atten.specific_attenuation_zphi(
+        phidp, dbz, alpha=0.3, b=0.6, rng=2000.0
+    )
+
+    out_vector = atten.specific_attenuation_zphi(
+        phidp, dbz, alpha=[0.2, 0.3], b=0.6, rng=2000.0
+    )
+
+    assert "alpha" in out_vector.dims
+    assert out_vector.sizes["alpha"] == 2
+    assert out_vector.sizes["range"] == out_scalar.sizes["range"]
+
+
+def test_specific_attenuation_depends_on_phidp(simple_phidp_dbz):
+    phidp, dbz = simple_phidp_dbz
+
+    out1 = atten.specific_attenuation_zphi(phidp, dbz, alpha=0.3, b=0.6, rng=2000.0)
+
+    phidp2 = phidp + 5.0  # perturb phase
+    out2 = atten.specific_attenuation_zphi(phidp2, dbz, alpha=0.3, b=0.6, rng=2000.0)
+
+    assert np.allclose(out1.values, out2.values)
+
+
+def test_specific_attenuation_data():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:
+        mask = swp.RHOHV > 0.9
+        phidp = swp.PHIDP.where(mask)
+        dbz = swp.DBZH.where(mask)
+
+    out1 = atten.specific_attenuation_zphi(phidp, dbz, 0.28, 0.78, rng=2000.0)
+    out2 = phidp.wrl.atten.specific_attenuation_zphi(dbz, 0.28, 0.78, rng=2000.0)
+
+    out1 = out1.max("range").sel(azimuth=slice(100, 150))
+    out2 = out2.max("range").sel(azimuth=slice(100, 150))
+    wanted = np.array(
+        [
+            1.07407273,
+            0.50883621,
+            0.5075296,
+            0.70262613,
+            1.17170939,
+            1.04093076,
+            0.6277884,
+            0.40821078,
+            0.87730694,
+            1.09753143,
+            1.15603688,
+            0.9731284,
+            3.14065076,
+            1.39616165,
+            1.28489366,
+            1.62729008,
+            1.65306511,
+            1.10869691,
+            1.77924222,
+            2.24248579,
+            0.58178274,
+            2.52007878,
+            1.71641173,
+            1.13451356,
+            0.36279973,
+            0.54705892,
+            0.5706312,
+            0.75613272,
+            0.82019211,
+            1.41853458,
+            1.36950221,
+            1.31224489,
+            1.57759488,
+            1.61514931,
+            2.13054111,
+            1.25734168,
+            1.26039325,
+            1.00678335,
+            0.96663833,
+            0.48267999,
+            0.69075709,
+            1.28177211,
+            1.21027243,
+            1.45197661,
+            1.90574993,
+            2.31374573,
+            2.82394853,
+            1.99345444,
+            1.50467872,
+            1.16656558,
+        ]
+    )
+    np.testing.assert_allclose(out1.values, wanted, atol=1e-6)
+    np.testing.assert_allclose(out2.values, wanted, atol=1e-6)

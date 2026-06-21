@@ -47,7 +47,7 @@ from functools import singledispatch
 
 import numpy as np
 import xarray as xr
-from scipy import ndimage, signal
+from scipy import integrate, ndimage, signal
 from scipy.spatial import KDTree
 
 from wradlib import georef, version
@@ -1774,6 +1774,19 @@ def bbox(*args):
             min(mins_y),
             max(maxs_y),
         ]
+    )
+
+
+def cumtrapz_xarray(da):
+    """xarray wrapper for scipy.cumtrapz"""
+    dr = da.range.diff("range").median("range").values / 1000.0
+    return xr.apply_ufunc(
+        integrate.cumulative_trapezoid,
+        da,
+        input_core_dims=[["range"]],
+        output_core_dims=[["range"]],
+        dask="parallelized",
+        kwargs=dict(dx=dr, initial=0.0, axis=-1),
     )
 
 

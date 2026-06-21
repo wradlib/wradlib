@@ -22,6 +22,7 @@ __all__ = [
     "correct_attenuation_constrained",
     "correct_radome_attenuation_empirical",
     "pia_from_kdp",
+    "specific_attenuation_zphi",
     "AttenMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -31,10 +32,10 @@ from functools import singledispatch
 
 import numpy as np
 from scipy import interpolate, ndimage
-from xarray import DataArray, apply_ufunc
+from xarray import DataArray, apply_ufunc, broadcast
 
-from wradlib import trafo, zr
-from wradlib.util import XarrayMethods, docstring
+from wradlib import dp, trafo, zr
+from wradlib.util import XarrayMethods, cumtrapz_xarray, docstring
 
 logger = logging.getLogger("attcorr")
 
@@ -749,6 +750,99 @@ def _pia_from_kdp_xarray(obj, **kwargs):
     out.name = "PIA"
 
 
+def _get_specific_attenuation_attrs(pol="h"):
+    return dict(
+        units="dB/km",
+        standard_name=f"specific_attenuation_{pol.lower()}",
+        long_name=f"Specific attenuation {pol.upper()}",
+        short_name=f"A{pol.upper()}",
+    )
+
+
+def specific_attenuation_zphi(phidp, dbz, alpha, b, rng=2000.0):
+    r"""
+    Estimate specific attenuation (:math:`A_H` or :math:`A_V`) using the ZPHI method.
+
+    This implementation follows the ZPHI approach (:cite:`Testud2000`,
+    :cite:`Ryzhkov2014`, :cite:`Diederich2015`), where the total differential phase
+    shift (:math:`\Delta \Phi_{DP}`) is first estimated from a representative range
+    interval, and then used to constrain the attenuation–reflectivity relationship.
+
+    Parameters
+    ----------
+    phidp : xarray.DataArray
+        Differential phase field with a ``range`` dimension.
+    dbz : xarray.DataArray
+        Reflectivity field in decibels (dBZ), same ``range`` dimension as ``phidp``.
+    alpha : float or array-like
+        ZPHI coefficient(s) controlling the relationship between phase shift and attenuation.
+    b : float
+        Exponent in the ZPHI power-law formulation.
+    rng : float, optional
+        Physical range (m) used for estimating total differential phase shift.
+        Default is 2000 m.
+
+    Returns
+    -------
+    xarray.DataArray
+        Specific attenuation field with metadata attributes:
+
+        - units: dB/km
+        - standard_name: specific_attenuation_h or v
+        - long_name: human-readable description
+        - short_name: AH or AV
+
+    Notes
+    -----
+    - Uses :func:`~wradlib.dp.delta_phidp` to estimate total differential phase shift.
+    - Negative phase shifts are clamped to a small positive value for stability.
+    - Reflectivity is converted from dBZ to linear units before integration.
+    - Assumes identical range coordinate system for `phidp` and `dbz`.
+
+    Examples
+    --------
+    See :ref:`Core Features - Attenuation - Specific Attenuation via ZPHI method <zphi_main_header>`.
+    """
+
+    # retrieve delta phidp
+    delta_phidp = dp.delta_phidp(phidp, rng=rng)
+    dphi = delta_phidp.dphi.where(delta_phidp.dphi >= 0, 1e-4)
+
+    # handle alpha
+    alpha = np.asarray(alpha)
+    if alpha.ndim == 0:
+        alpha = DataArray(alpha)
+    else:
+        alpha = DataArray(alpha, dims="alpha", coords={"alpha": alpha})
+    alpha, dphi = broadcast(alpha, dphi)
+
+    # need to expand alpha to dphi-shape
+    fdphi = 10 ** (0.1 * b * alpha * dphi) - 1
+
+    # select start and stop range according delta_phidp output
+    zhraw = dbz.where(
+        (dbz.range >= delta_phidp.start_range) & (dbz.range <= delta_phidp.stop_range)
+    )
+    zax = zhraw.wrl.trafo.idecibel().fillna(1e-4)
+    za = zax**b
+    # set masked to zero for integration
+    za_zero = za.fillna(0)
+
+    # integrate
+    iza_x = 0.46 * b * za_zero.pipe(cumtrapz_xarray)
+    iza = iza_x.max("range") - iza_x
+    iza_fdphi = iza / fdphi
+
+    # integral from r1 to r2
+    iza_first = iza_fdphi.sel(range=delta_phidp.start_range)
+
+    ah = za / (iza_first + iza)
+    pol = "V" if "V" in dbz.name.upper() else "H"
+    ah.attrs = _get_specific_attenuation_attrs(pol=pol)
+
+    return ah
+
+
 class AttenMethods(XarrayMethods):
     """wradlib xarray SubAccessor methods for Atten Methods."""
 
@@ -779,6 +873,13 @@ class AttenMethods(XarrayMethods):
             return pia_from_kdp(self, *args, **kwargs)
         else:
             return pia_from_kdp(self._obj, *args, **kwargs)
+
+    @docstring(specific_attenuation_zphi)
+    def specific_attenuation_zphi(self, *args, **kwargs):
+        if not isinstance(self, AttenMethods):
+            return specific_attenuation_zphi(self, *args, **kwargs)
+        else:
+            return specific_attenuation_zphi(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
