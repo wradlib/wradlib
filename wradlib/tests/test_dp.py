@@ -11,6 +11,7 @@ import xarray as xr
 from scipy import integrate
 
 from wradlib import dp, util
+from wradlib.tests import requires_xhistogram
 
 
 @pytest.fixture(params=["lstsq", "cov", "matrix_inv", "lanczos_conv", "lanczos_dot"])
@@ -315,6 +316,7 @@ def test_unfold_phi_vulpiani_xarray(gamic_swp):
     gamic_swp.wrl.dp.unfold_phi_vulpiani(phidp="PHIDP", kdp="KDP")
 
 
+@requires_xhistogram
 def test_system_phidp():
     phidp = xr.DataArray(
         [
