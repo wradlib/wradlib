@@ -9,10 +9,13 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 ## Version 2.9.1
 
+**Maintenance**
+
+* numpy.fix deprecated, replaced by numpy.trunc ({pull}`780`) by {at}`egouden` 
+
 **Bugfixes**
 
 * phidp histogram tests require xhistogram.xarray  ({issue}`781`) reported by {at}`egouden`, ({pull}`782`) by {at}`kmuehlbauer`
-
 
 ## Version 2.9.0
 

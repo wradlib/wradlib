@@ -348,11 +348,11 @@ def filter_window_polar(img, wsize, fun, rscale, *, random=False):
     if random:
         na = prob_round(wsize / asize).astype(int)
     else:
-        na = np.fix(wsize / asize + 0.5).astype(int)
+        na = np.trunc(wsize / asize + 0.5).astype(int)
     # Maximum of adjacent azimuths (higher close to the origin) to
     # increase performance
     na[na > 20] = 20
-    sr = np.fix(wsize / rscale + 0.5).astype(int)
+    sr = np.trunc(wsize / rscale + 0.5).astype(int)
     for sa in np.unique(na):
         imax = np.where(na >= sa)[0][-1] + 1
         imin = np.where(na <= sa)[0][0]
@@ -435,7 +435,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 
     """
     fun = getattr(ndimage, f"{fun}_filter")
-    size = np.fix(wsize / scale + 0.5).astype(int)
+    size = np.trunc(wsize / scale + 0.5).astype(int)
     data_filtered = fun(img, size, **kwargs)
     return data_filtered
 
