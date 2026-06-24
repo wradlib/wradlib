@@ -84,6 +84,7 @@ rioxarray = util.import_optional("rioxarray")
 pyproj = util.import_optional("pyproj")
 requests = util.import_optional("requests")
 xmltodict = util.import_optional("xmltodict")
+xhistogram = util.import_optional("xhistogram.xarray")
 
 
 requires_bottleneck = pytest.mark.skipif(
@@ -143,4 +144,9 @@ else:
 
 requires_geos = pytest.mark.skipif(
     not has_geos, reason="GDAL missing, or GDAL without GEOS"
+)
+
+requires_xhistogram = pytest.mark.skipif(
+    not util.has_import(xhistogram),
+    reason="requires xhistogram.xarray.",
 )
