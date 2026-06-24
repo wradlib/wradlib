@@ -11,7 +11,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Bugfixes**
 
-* phidp histogram tests requre xhistogram.xarray  ({issue}`781`) reported by {at}`egouden`, {pull}`782`) by {at}`kmuehlbauer`
+* phidp histogram tests require xhistogram.xarray  ({issue}`781`) reported by {at}`egouden`, ({pull}`782`) by {at}`kmuehlbauer`
 
 
 ## Version 2.9.0
