@@ -148,6 +148,7 @@ As for now, the following dependencies are defined as optional:
 | netCDF4    | >= 1.0    | >= latest   |
 | requests   | >= 2.23.0 | >= latest   |
 | xmltodict  | >= 0.12   | >= latest   |
+| xhistogram | >= 0.3    | >= latest   |
 
 The following libraries are used by `netCDF4`, `h5py`/`h5netcdf` and `gdal` packages and should apply to these requirements:
 
