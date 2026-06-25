@@ -124,6 +124,7 @@ def _pulse_volume_xarray(obj, h, theta, **kwargs):
     return _pulse_volume_numpy(obj, h, theta)
 
 
+@singledispatch
 def beam_block_frac(th, bh, a):
     """Partial beam blockage fraction.
 
@@ -195,6 +196,24 @@ def beam_block_frac(th, bh, a):
         return pbb
 
 
+@beam_block_frac.register(xr.DataArray)
+def _beam_block_frac_xarray(dem, beamwidth):
+    a = dem.wrl.util.half_power_radius(beamwidth)
+    dim0 = dem.wrl.util.dim0()
+    pbb = xr.apply_ufunc(
+        beam_block_frac,
+        dem,
+        dem.coords["z"],
+        a,
+        input_core_dims=[[dim0, "range"], [dim0, "range"], ["range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    return pbb
+
+
+@singledispatch
 def cum_beam_block_frac(pbb):
     """Cumulative beam blockage fraction along a beam.
 
@@ -242,6 +261,24 @@ def cum_beam_block_frac(pbb):
         cbb[ii, index:] = pbb[ii, index]
 
     return cbb
+
+
+@cum_beam_block_frac.register(xr.DataArray)
+def _cum_beam_block_frac_xarray(pbb):
+    """
+    Cumulative beam blockage using modern xarray patterns.
+
+    Parameters
+    ----------
+    pbb : xr.DataArray
+        Partial beam blockage with dims ("azimuth", "range")
+
+    Returns
+    -------
+    xr.DataArray
+        Cumulative beam blockage
+    """
+    return pbb.cumulative("range").max()
 
 
 @singledispatch
@@ -465,6 +502,20 @@ class QualMethods(XarrayMethods):
             return estimate_snr(self, *args, **kwargs)
         else:
             return estimate_snr(self._obj, *args, **kwargs)
+
+    @docstring(beam_block_frac)
+    def beam_block_frac(self, *args, **kwargs):
+        if not isinstance(self, QualMethods):
+            return beam_block_frac(self, *args, **kwargs)
+        else:
+            return beam_block_frac(self._obj, *args, **kwargs)
+
+    @docstring(_cum_beam_block_frac_xarray)
+    def cum_beam_block_frac(self, *args, **kwargs):
+        if not isinstance(self, QualMethods):
+            return cum_beam_block_frac(self, *args, **kwargs)
+        else:
+            return cum_beam_block_frac(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

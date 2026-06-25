@@ -16,7 +16,7 @@ Provide surface/terrain elevation information from SRTM data
    {}
 """
 
-__all__ = ["download_srtm", "get_srtm", "get_srtm_tile_names"]
+__all__ = ["download_srtm", "get_srtm", "get_srtm_tile_names", "merge_srtm"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
@@ -194,3 +194,38 @@ def get_srtm(extent, *, resolution=3, merge=True, session=None):
     dem = gdal.Warp("", demlist, format="MEM")
 
     return dem
+
+
+def merge_srtm(tiles, destination=None, **kwargs):
+    """
+    Merge SRTM tiles.
+
+    Parameters
+    ----------
+    tiles : sequence of str or gdal.Dataset
+        Input tiles.
+    destination : str, optional
+        Output filename. If omitted, an in-memory dataset is
+        returned. If given, the merged DEM is written to the
+        specified file.
+
+    Returns
+    -------
+    gdal.Dataset
+        Merged dataset.
+    """
+    datasets = [gdal.Open(tile) if isinstance(tile, str) else tile for tile in tiles]
+
+    if destination is None:
+        destination = ""
+        kwargs["format"] = "MEM"
+
+    kwargs.setdefault("format", "GTiff")
+
+    out_ds = gdal.Warp(destination, datasets, **kwargs)
+
+    if kwargs.get("format") == "MEM":
+        return out_ds
+    else:
+        out_ds = None
+        return destination
