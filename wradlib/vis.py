@@ -17,6 +17,7 @@ Standard plotting and mapping procedures.
 
 __all__ = [
     "plot",
+    "plot_beamblockage",
     "plot_ppi_crosshair",
     "create_cg",
     "plot_scan_strategy",
@@ -29,8 +30,10 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
+from functools import singledispatch
 
 import numpy as np
+import xarray as xr
 from xradar.georeference import get_crs
 
 from wradlib import georef, io, ipol, util
@@ -373,6 +376,7 @@ def _plot_beam(r, alt, beamradius, *, ax=None, label=None):
     return fill, center, edge
 
 
+@singledispatch
 def plot_scan_strategy(
     ranges,
     elevs,
@@ -443,15 +447,44 @@ def plot_scan_strategy(
 
     az = np.array([az])
 
-    if maxrange is None:
-        maxrange = ranges.max()
+    elevs = np.asarray(elevs)
 
-    xyz, rad = georef.spherical_to_xyz(ranges, az, elevs, site, squeeze=True)
+    # backward compatibility
+    if np.ndim(ranges) == 1:
+        ranges = [np.asarray(ranges)] * len(elevs)
+    else:
+        ranges = [np.asarray(r) for r in ranges]
+
+    if len(ranges) != len(elevs):
+        raise ValueError(
+            "`ranges` must either be a single range array or "
+            "contain one range array per elevation."
+        )
+
+    if maxrange is None:
+        maxrange = max(r.max() for r in ranges)
+
+    xyz = []
+    rad = None
+
+    for rng, el in zip(ranges, elevs, strict=True):
+        xyz_el, rad = georef.spherical_to_xyz(
+            rng,
+            az,
+            np.array([el]),
+            site,
+            squeeze=True,
+        )
+        xyz.append(xyz_el)
+
+    # get index of maximum ranges
+    imax = np.argmax([r.max() for r in ranges])
 
     add_title = ""
     if terrain is True:
         add_title += f" - Azimuth {az[0]}°"
-        ll = georef.reproject(xyz, src_crs=rad)
+
+        ll = georef.reproject(xyz[imax], src_crs=rad)
         # (down-)load srtm data
         ds = io.get_srtm(
             [ll[..., 0].min(), ll[..., 0].max(), ll[..., 1].min(), ll[..., 1].max()],
@@ -478,8 +511,8 @@ def plot_scan_strategy(
         er = 6371000
         # calculate beam_height and arc_distance for ke=1
         # means line of sight
-        ade = georef.bin_distance(ranges, 0, site[2], ke=1.0)
-        nn0 = np.zeros_like(ranges)
+        ade = georef.bin_distance(ranges[imax], 0, site[2], ke=1.0)
+        nn0 = np.zeros_like(ranges[imax])
         ecp = nn0 + er
         # theta (arc_distance sector angle)
         thetap = -np.degrees(ade / er) + 90.0
@@ -508,7 +541,7 @@ def plot_scan_strategy(
         paax = ax
         caax = ax
         if terrain is not None:
-            paax.fill_between(ranges, 0, terrain, color="0.75", zorder=2)
+            paax.fill_between(ranges[imax], 0, terrain, color="0.75", zorder=2)
         ax.set_xlim(0.0, maxrange)
         ax.set_ylim(0.0, maxalt)
         ax.grid()
@@ -542,24 +575,33 @@ def plot_scan_strategy(
     paax.set_prop_cycle(cycle)
 
     # correctly handle single/multiple elevations
-    if xyz.ndim == 2:
-        xyz = xyz[np.newaxis, ...]
+    # if xyz.ndim == 2:
+    #    xyz = xyz[np.newaxis, ...]
 
     # plot beams
-    for i, el in enumerate(elevs):
-        alt = xyz[i, ..., 2]
-        groundrange = np.sqrt(xyz[i, ..., 0] ** 2 + xyz[i, ..., 1] ** 2)
+    for _i, (el, rng, xyz_el) in enumerate(zip(elevs, ranges, xyz, strict=True)):
+        alt = xyz_el[..., 2]
+        groundrange = np.sqrt(xyz_el[..., 0] ** 2 + xyz_el[..., 1] ** 2)
 
         if cg:
+            ade = georef.bin_distance(rng, 0, site[2], ke=1.0)
+
+            thetap = -np.degrees(ade / er) + 90.0
+
             plrange = thetap
-            plalt = ecp + alt
-            beamradius = util.half_power_radius(ranges, beamwidth)
+            plalt = ecp[: len(rng)] + alt
+            beamradius = util.half_power_radius(rng, beamwidth)
         else:
             plrange = np.insert(groundrange, 0, 0)
             plalt = np.insert(alt, 0, site[2])
             beamradius = util.half_power_radius(plrange, beamwidth)
+
         _, center, edge = _plot_beam(
-            plrange, plalt, beamradius, label=f"{el:4.1f}°", ax=paax
+            plrange,
+            plalt,
+            beamradius,
+            label=f"{el:4.1f}°",
+            ax=paax,
         )
 
     # legend 1
@@ -594,6 +636,32 @@ def plot_scan_strategy(
     caax.set_ylabel(f"Altitude ({units})")
 
     return ax
+
+
+@plot_scan_strategy.register(xr.DataTree)
+def _plot_scan_strategy_xarray(obj, **kwargs):
+
+    # sort by elevation
+    obj = xr.DataTree.from_dict(
+        {
+            "/": obj.ds,
+            **{
+                name: obj[name]
+                for name in sorted(obj.children, key=lambda x: int(x.split("_")[-1]))
+                if "sweep" in name
+            },
+        }
+    )
+
+    # extract needed values
+    ranges = [obj[name].range.values for name in obj.children]
+    elevs = [obj[name].sweep_fixed_angle.values for name in obj.children]
+    site = (
+        obj.coords["longitude"].values,
+        obj.coords["latitude"].values,
+        obj.coords["altitude"].values,
+    )
+    return plot_scan_strategy(ranges, elevs, site, **kwargs)
 
 
 def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, *, unit="", title="", **kwargs):
@@ -1046,6 +1114,111 @@ def plot(
     return pm
 
 
+def plot_beamblockage(swp, **kwargs):
+    """Visualize terrain-induced radar beam blockage.
+
+    This function creates a three-panel overview of beam blockage effects for a
+    radar sweep. The first panel shows the digital elevation model (DEM) and
+    the selected radar ray, the second panel displays the cumulative beam
+    blockage fraction (CBB) over the sweep, and the third panel shows a
+    vertical profile along the selected ray including terrain, beam geometry,
+    and cumulative beam blockage.
+
+    Parameters
+    ----------
+    swp : xarray.Dataset
+        Radar sweep dataset containing the interpolated DEM, beam height,
+        and cumulative beam blockage fields. The dataset is expected to
+        provide the variables ``DEM``, ``CBB``, and ``z`` as well as the
+        coordinates ``range``, ``azimuth``, ``x``, and ``y``.
+
+    Other Parameters
+    ----------------
+    figsize : tuple, optional
+        Figure size passed to matplotlib. Defaults to ``(15, 12)``.
+
+    angle : float, optional
+        Azimuth angle in degrees used to select the ray for the terrain
+        profile. The nearest available azimuth is used. Defaults to ``0``.
+
+    bw : float, optional
+        Radar beam width in degrees used to calculate the half-power beam
+        radius. Defaults to ``1.0``.
+
+    xlim : tuple, optional
+        Range limits for the profile plot in metres. Defaults to the full
+        sweep range.
+
+    ylim : tuple, optional
+        Height limits for the profile plot in metres. Defaults to
+        ``(0, 3000)``.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The created figure.
+
+    Notes
+    -----
+    The beam blockage fraction is computed following the methodology of
+    Bech et al.
+    """
+    figsize = kwargs.pop("figsize", (15, 12))
+    angle = kwargs.pop("angle", 0)
+    bw = kwargs.pop("bw", 1.0)
+    xlim = kwargs.pop("xlim", (0.0, swp.range.max() + 0.1))
+    ylim = kwargs.pop("ylim", (0.0, 3000.0))
+
+    center = swp.isel(range=0)
+    beam = swp.sel(azimuth=angle, method="nearest")
+    beamradius = swp.wrl.util.half_power_radius(bw)
+
+    fig = plt.figure(figsize=figsize)
+
+    # create subplots
+    ax1 = plt.subplot2grid((2, 2), (0, 0))
+    ax2 = plt.subplot2grid((2, 2), (0, 1))
+    ax3 = plt.subplot2grid((2, 2), (1, 0), colspan=2, rowspan=1)
+
+    # Plot terrain (on ax1)
+    _ = swp.DEM.wrl.vis.plot(
+        x="x", y="y", ax=ax1, cmap="terrain", vmin=0.0, add_colorbar=False
+    )
+    ax1.scatter(beam.x, beam.y, marker=".", color="r", alpha=0.2)
+    ax1.set_title("DEM - Elevation")
+    ax1.plot(center.x.mean().values, center.y.mean().values, "ro")
+
+    # Plot CBB (on ax2)
+    _ = swp.CBB.wrl.vis.plot(ax=ax2, cmap="PuRd", vmin=0, vmax=1, add_colorbar=False)
+    ax2.set_title("Beam-Blockage Fraction")
+
+    # Plot single ray terrain profile on ax3
+    (bc,) = beam.z.plot(x="range", c="b", linewidth=3, label="Beam Center")
+    (b3db,) = (beam.z + beamradius).plot(
+        x="range", c="b", ls=":", lw=1.5, label="3 dB Beam width"
+    )
+    (beam.z - beamradius).plot(x="range", c="b", ls=":", lw=1.5)
+
+    ax3.fill_between(swp.range, 0.0, beam.DEM, color="0.75")
+    ax3.set_xlim(*xlim)
+    ax3.set_ylim(*ylim)
+    ax3.grid()
+    axb = ax3.twinx()
+    (bbf,) = beam.CBB.plot(c="k", label="BBF")
+    axb.set_ylabel("Beam-blockage fraction")
+    axb.set_xlim(*xlim)
+    axb.set_ylim(0.0, 1.0)
+
+    _ = ax3.legend(
+        (bc, b3db, bbf),
+        ("Beam Center", "3 dB Beam width", "BBF"),
+        loc="upper left",
+        fontsize=10,
+    )
+
+    return fig
+
+
 class VisMethods(util.XarrayMethods):
     """wradlib xarray SubAccessor methods for visualization."""
 
@@ -1070,6 +1243,20 @@ class VisMethods(util.XarrayMethods):
     def contourf(self, *args, **kwargs):
         kwargs.setdefault("func", "contourf")
         return self.plot(*args, **kwargs)
+
+    @util.docstring(plot_scan_strategy)
+    def plot_scan_strategy(self, *args, **kwargs):
+        if not isinstance(self, VisMethods):
+            return plot_scan_strategy(self, *args, **kwargs)
+        else:
+            return plot_scan_strategy(self._obj, *args, **kwargs)
+
+    @util.docstring(plot_beamblockage)
+    def plot_beamblockage(self, *args, **kwargs):
+        if not isinstance(self, VisMethods):
+            return plot_beamblockage(self, *args, **kwargs)
+        else:
+            return plot_beamblockage(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
