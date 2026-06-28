@@ -477,11 +477,14 @@ def plot_scan_strategy(
         )
         xyz.append(xyz_el)
 
+    # get index of maximum ranges
+    imax = np.argmax([r.max() for r in ranges])
+
     add_title = ""
     if terrain is True:
         add_title += f" - Azimuth {az[0]}°"
 
-        imax = np.argmax([r.max() for r in ranges])
+
         ll = georef.reproject(xyz[imax], src_crs=rad)
         # (down-)load srtm data
         ds = io.get_srtm(
@@ -509,8 +512,8 @@ def plot_scan_strategy(
         er = 6371000
         # calculate beam_height and arc_distance for ke=1
         # means line of sight
-        ade = georef.bin_distance(ranges, 0, site[2], ke=1.0)
-        nn0 = np.zeros_like(ranges)
+        ade = georef.bin_distance(ranges[imax], 0, site[2], ke=1.0)
+        nn0 = np.zeros_like(ranges[imax])
         ecp = nn0 + er
         # theta (arc_distance sector angle)
         thetap = -np.degrees(ade / er) + 90.0
@@ -539,7 +542,7 @@ def plot_scan_strategy(
         paax = ax
         caax = ax
         if terrain is not None:
-            paax.fill_between(ranges, 0, terrain, color="0.75", zorder=2)
+            paax.fill_between(ranges[imax], 0, terrain, color="0.75", zorder=2)
         ax.set_xlim(0.0, maxrange)
         ax.set_ylim(0.0, maxalt)
         ax.grid()
