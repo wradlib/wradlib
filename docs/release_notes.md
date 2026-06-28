@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.9.2
+
+**Bugfixes**
+
+* fix DEM handling, add missing srtm_merge, beam blockage accessors and plotting ({pull}`783`) by {at}`kmuehlbauer`
+
 ## Version 2.9.1
 
 **Maintenance**
