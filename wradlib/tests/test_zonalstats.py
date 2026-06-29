@@ -553,8 +553,8 @@ def zonal_data():
         radar_gkc = georef.reproject(radar_llc, src_crs=proj_ll, trg_crs=proj_gk)
 
         # reshape
-        radar_gk.shape = (rays, bins, 5, 2)
-        radar_gkc.shape = (rays, bins, 2)
+        radar_gk = radar_gk.reshape((rays, bins, 5, 2))
+        radar_gkc = radar_gkc.reshape((rays, bins, 2))
 
         box0 = np.array(
             [

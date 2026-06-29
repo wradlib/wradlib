@@ -1262,8 +1262,7 @@ class _radolan_file:
                 self._data[self.product] = self._data[self.product].astype(self.dtype)
         self._process_data()
         for _k, v in self._data.items():
-            v.shape = self.shape
-            self._data[_k] = v
+            self._data[_k] = v.reshape(self.shape)
 
     def _read(self):
         attrs = self.attrs.copy()

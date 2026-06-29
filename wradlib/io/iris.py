@@ -263,7 +263,7 @@ class IrisCartesianProductFile(xiris.IrisRecordFile):
         cnt = x_size * y_size * z_size
         data = self.read_from_record(cnt, prod["dtype"])
         data = self.decode_data(data, prod=prod)
-        data.shape = (z_size, y_size, x_size)
+        data = data.reshape((z_size, y_size, x_size))
         if self._origin == "upper":
             data = np.flip(data, axis=1)
         return data

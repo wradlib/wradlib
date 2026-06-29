@@ -1287,7 +1287,7 @@ def probability(data, weights):
     data = data.copy()
     weights = weights.copy()
     maxw = np.sum(weights)
-    weights.shape = (1, len(weights)) + len(data.shape[2:]) * (1,)
+    weights = weights.reshape((1, len(weights)) + len(data.shape[2:]) * (1,))
     weights = np.broadcast_to(weights, data.shape)
     return np.sum(data * weights, axis=1) / maxw
 

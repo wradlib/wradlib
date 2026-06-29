@@ -168,9 +168,9 @@ def spherical_to_xyz(
     xyz = np.stack((x, y, z), axis=-1)
 
     if xyz.ndim == 1:
-        xyz.shape = (1,) * 3 + xyz.shape
+        xyz = xyz.reshape((1,) * 3 + xyz.shape)
     elif xyz.ndim == 2:
-        xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
+        xyz = xyz.reshape((xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],))
 
     if squeeze:
         xyz = np.squeeze(xyz)
@@ -992,12 +992,12 @@ def maximum_intensity_projection(
 
     # digitize coordinates according to cartesian range array
     range_dig1 = np.digitize(xxx.ravel(), dc)
-    range_dig1.shape = xxx.shape
+    range_dig1 = range_dig1.reshape(xxx.shape)
 
     # digitize heights according polar height array
     height_dig1 = np.digitize(hp.ravel(), hc)
     # reshape accordingly
-    height_dig1.shape = hp.shape
+    height_dig1 = height_dig1.reshape(hp.shape)
 
     # what am I doing here?!
     range_dig1 = range_dig1[0:-1, 0:-1]
