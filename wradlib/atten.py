@@ -160,6 +160,7 @@ def _correct_attenuation_hb_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
+    out.attrs = _get_path_integrated_attenuation_attrs()
     out.name = "correct_attenuation_hb"
     return out
 
@@ -603,6 +604,7 @@ def _correct_attenuation_constrained_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
+    out.attrs = _get_path_integrated_attenuation_attrs()
     out.name = "correct_attenuation_constrained"
     return out
 
@@ -741,16 +743,23 @@ def _pia_from_kdp_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
-    out.attrs = {
-        "standard_name": "path_integrated_attenuation",
-        "long_name": "Path-integrated attenuation",
-        "short_name": "PIA",
-        "units": "dB",
-    }
+    out.attrs = _get_path_integrated_attenuation_attrs()
     out.name = "PIA"
 
+    return out
 
-def _get_specific_attenuation_attrs(pol="h"):
+
+def _get_path_integrated_attenuation_attrs():
+    return dict(
+        units="dB",
+        standard_name="path_integrated_attenuation",
+        long_name="Path-integrated attenuation",
+        short_name="PIA",
+    )
+
+
+def _get_specific_attenuation_attrs(obj):
+    pol = "V" if "V" in obj.name.upper() else "H"
     return dict(
         units="dB/km",
         standard_name=f"specific_attenuation_{pol.lower()}",
@@ -837,8 +846,7 @@ def specific_attenuation_zphi(phidp, dbz, alpha, b, rng=2000.0):
     iza_first = iza_fdphi.sel(range=delta_phidp.start_range)
 
     ah = za / (iza_first + iza)
-    pol = "V" if "V" in dbz.name.upper() else "H"
-    ah.attrs = _get_specific_attenuation_attrs(pol=pol)
+    ah.attrs = _get_specific_attenuation_attrs(dbz)
 
     return ah
 
