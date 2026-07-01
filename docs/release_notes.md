@@ -7,12 +7,17 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.9.4
+
+**Bugfixes**
+
+* return metadata attrs in PIA functions in module atten.py, add missing return in {meth}`wradlib.atten.AttenMethods.pia_from_kdp` ({pull}`785`) by {at}`kmuehlbauer`
+
 ## Version 2.9.3
 
 **Maintenance**
 
 * direct shape modification deprecated, replaced by numpy.reshape ({pull}`784`) by {at}`egouden`
-
 
 ## Version 2.9.2
 
