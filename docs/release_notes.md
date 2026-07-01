@@ -7,6 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Main
+
+**Maintenance**
+
+* direct shape modification deprecated, replaced by numpy.reshape ({pull}`784`) by {at}`egouden`
+
+
 ## Version 2.9.2
 
 **Bugfixes**
@@ -17,7 +24,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Maintenance**
 
-* numpy.fix deprecated, replaced by numpy.trunc ({pull}`780`) by {at}`egouden` 
+* numpy.fix deprecated, replaced by numpy.trunc ({pull}`780`) by {at}`egouden`
 
 **Bugfixes**
 

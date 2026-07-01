@@ -545,7 +545,7 @@ def _call_inverse_distance_weighting(
 
     # shape handling (time, ensemble etc)
     wshape = weights.shape
-    weights.shape = wshape + ((vals.ndim - 1) * (1,))
+    weights = weights.reshape(wshape + ((vals.ndim - 1) * (1,)))
 
     # expand vals to trg grid
     trgvals = vals[ix]
