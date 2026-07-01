@@ -752,7 +752,7 @@ def _pia_from_kdp_xarray(obj, **kwargs):
 def _get_path_integrated_attenuation_attrs():
     return dict(
         units="dB",
-        standard_name=f"path_integrated_attenuation",
+        standard_name="path_integrated_attenuation",
         long_name="Path-integrated attenuation",
         short_name="PIA",
     )
