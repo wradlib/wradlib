@@ -301,6 +301,8 @@ def z_to_r_enhanced(z, *, polar=True, shower=True):
     rr[gt44] = z_to_r(z[gt44], a=77.0, b=1.9)
     rr[bt3644] = z_to_r(z[bt3644], a=200.0, b=1.6)
 
+    rr[np.isnan(z)] = np.nan
+
     rr = rr.reshape(shape)
     si = si.reshape(shape)
 
