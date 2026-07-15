@@ -7,6 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.9.5
+
+**Bugfixes**
+
+* make _aggregate_sysphi lazy and dask-aware ({pull}`788`) by {at}`kmuehlbauer`
+* propagate nans in z_to_r_enhanced ({pull}`787`) by {at}`egouden`
+
 ## Version 2.9.4
 
 **Bugfixes**
