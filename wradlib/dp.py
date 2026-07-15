@@ -939,8 +939,38 @@ def _get_bins_from_range(obj, rng):
 
 
 def _aggregate_sysphi(phi, n_lowest_rays):
-    valid_phi = phi.where(phi.notnull(), drop=True)
-    return valid_phi.sortby(valid_phi)[:n_lowest_rays].median(skipna=True)
+    """Median of the n lowest finite rays.
+
+    Applies independently to every profile orthogonal to the
+    azimuth/elevation dimension and supports lazy Dask arrays.
+    """
+    try:
+        dim = next(dim for dim in phi.dims if dim in {"azimuth", "elevation"})
+    except StopIteration as err:
+        raise ValueError(
+            f"Expected one of 'azimuth' or 'elevation' in dimensions {phi.dims!r}"
+        ) from err
+
+    def _aggregate(block):
+        block = block[np.isfinite(block)]
+
+        if block.size < n_lowest_rays:
+            return np.nan
+
+        return np.median(
+            # select the n_lowest_rays finite values without a full sort
+            np.partition(block, n_lowest_rays - 1)[:n_lowest_rays]
+        )
+
+    return xr.apply_ufunc(
+        _aggregate,
+        phi,
+        input_core_dims=[[dim]],
+        output_core_dims=[[]],
+        dask="parallelized",
+        vectorize=True,
+        output_dtypes=[float],
+    )
 
 
 def system_phidp_block(phidp, rng, n_lowest_rays=30):
