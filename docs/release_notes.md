@@ -11,7 +11,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Bugfixes**
 
-* set units of the `z` coordinate to meters in {func}`wradlib.georef.georeference` instead of inheriting the units of `x`, and use meters for `gr` on geographic CRS ({issue}`791`) reported by {at}`aladinor`, ({pull}`XXX`) by {at}`aladinor`
+* set units of the `z` coordinate to meters in {func}`wradlib.georef.georeference` instead of inheriting the units of `x`, and use meters for `gr` on geographic CRS ({issue}`791`) reported by {at}`aladinor`, ({pull}`792`) by {at}`aladinor`
 
 ## Version 2.9.5
 
