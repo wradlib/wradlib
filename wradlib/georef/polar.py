@@ -1136,9 +1136,9 @@ def georeference(obj, **kwargs):
     cf_by_axis = {c["axis"]: c for c in cf_coords}
     x_attrs = cf_by_axis.get("X")
     y_attrs = cf_by_axis.get("Y")
-    unit = x_attrs["units"]
-    z_attrs = {"standard_name": "height_above_ground", "units": unit}
-    gr_attrs = {"standard_name": "distance_from_radar", "units": unit}
+    gr_unit = "meters" if trg_crs.is_geographic else x_attrs["units"]
+    z_attrs = {"standard_name": "height_above_ground", "units": "meters"}
+    gr_attrs = {"standard_name": "distance_from_radar", "units": gr_unit}
     obj.coords["x"] = (dimlist, xyz[..., 0], x_attrs)
     obj.coords["y"] = (dimlist, xyz[..., 1], y_attrs)
     obj.coords["z"] = (dimlist, xyz[..., 2], z_attrs)

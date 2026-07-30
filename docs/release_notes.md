@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.9.6
+
+**Bugfixes**
+
+* set units of the `z` coordinate to meters in {func}`wradlib.georef.georeference` instead of inheriting the units of `x`, and use meters for `gr` on geographic CRS ({issue}`791`) reported by {at}`aladinor`, ({pull}`XXX`) by {at}`aladinor`
+
 ## Version 2.9.5
 
 **Bugfixes**
