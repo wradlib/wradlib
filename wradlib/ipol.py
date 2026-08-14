@@ -1349,7 +1349,7 @@ class OrdinaryKriging(IpolBase):
 
     def _krig_matrix(self, src):
         """Sets up the kriging system for a configuration of source points."""
-        var_matrix = self.cov_func(spatial.distance_matrix(src, src))
+        var_matrix = self.cov_func(spatial.distance.cdist(src, src))
 
         ok_matrix = np.ones((len(src) + 1, len(src) + 1))
 
@@ -1543,7 +1543,7 @@ class ExternalDriftKriging(IpolBase):
     def _krig_matrix(self, src, drift):
         """Sets up the kriging system for a configuration of source points."""
         # the basic covariance matrix
-        var_matrix = self.cov_func(spatial.distance_matrix(src, src))
+        var_matrix = self.cov_func(spatial.distance.cdist(src, src))
         # the extended matrix, initialized to ones
         edk_matrix = np.ones((len(src) + 2, len(src) + 2))
 
