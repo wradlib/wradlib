@@ -394,6 +394,7 @@ def test_nnearest_warning(ipol_data):
             ipol_data.src, ipol_data.trg, nnearest=len(ipol_data.src) + 1
         )
         for item in w:
+            print(item)
             assert issubclass(item.category, UserWarning)
             assert "nnearest" in str(item.message)
 
