@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**Bugfixes** 
+
+* use ``scipy.spatial.distance.cdist`` instead of deprecated ``scipy.spatial.distance_matrix`` in ({pull}`793`) by {at}`kmuehlbauer`
+
 ## Version 2.9.5
 
 **Bugfixes**
