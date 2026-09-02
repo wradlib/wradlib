@@ -1606,6 +1606,37 @@ def test_georeference_dataset(xr_data):
     xr.testing.assert_equal(xr_data, da)
 
 
+@pytest.mark.parametrize(
+    "crs",
+    [None, 4979, 3433, 3857],
+    ids=["aeqd", "geographic", "projected_feet", "projected_metre"],
+)
+def test_georeference_z_gr_units(crs):
+    # z is a beam height in meters whatever the target CRS is, so it must not
+    # inherit the units of x as it did before GH791.
+    # gr will now also return meters to conform with z
+    da = georef.create_xarray_dataarray(
+        np.random.rand(360, 100),
+        r=np.arange(500.0, 100000.0, 1000.0),
+        phi=np.arange(0.5, 360.0),
+        theta=np.ones(360) * 0.5,
+        site=(-92.0, 35.0, 100.0),
+        sweep_mode="azimuth_surveillance",
+    )
+    da = georef.georeference(da, crs=crs)
+
+    crs = georef.ensure_crs(crs)
+    x_unit = "metre" if crs is None else crs.axis_info[0].unit_name
+    y_unit = "metre" if crs is None else crs.axis_info[1].unit_name
+    assert da.x.attrs["units"] == x_unit
+    assert da.x.attrs["units"] == y_unit
+    assert da.z.attrs["units"] == "metre"
+    assert da.gr.attrs["units"] == "metre"
+
+    # z really is in meters, it would be O(1) if it had been left in degrees
+    assert da.z.max() > 1000.0
+
+
 @requires_gdal
 def test_ensure_crs_pyproj():
     crs_pyproj = pyproj.CRS.from_epsg(4326)

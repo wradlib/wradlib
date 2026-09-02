@@ -7,11 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development Version
+## Version 2.9.6
 
-**Bugfixes** 
+**Bugfixes**
 
-* use ``scipy.spatial.distance.cdist`` instead of deprecated ``scipy.spatial.distance_matrix`` in ({pull}`793`) by {at}`kmuehlbauer`
+* set units of the `z` and `gr` coordinates to meters in {func}`wradlib.georef.georeference` instead of inheriting the units of `x` ({issue}`791`) reported by {at}`aladinor`, ({pull}`792`) by {at}`aladinor` and {at}`kmuehlbauer`
+* use `scipy.spatial.distance.cdist` instead of deprecated `scipy.spatial.distance_matrix` in {mod}`wradlib.ipol` ({pull}`793`) by {at}`kmuehlbauer`
 
 ## Version 2.9.5
 
