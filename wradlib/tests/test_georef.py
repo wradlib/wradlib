@@ -1613,8 +1613,8 @@ def test_georeference_dataset(xr_data):
 )
 def test_georeference_z_gr_units(crs):
     # z is a beam height in meters whatever the target CRS is, so it must not
-    # inherit the units of x as it did before GH791. gr keeps the CRS units,
-    # which ground_range only computes in meters for a geographic CRS.
+    # inherit the units of x as it did before GH791. 
+    # gr will now also return meters to conform with z
     da = georef.create_xarray_dataarray(
         np.random.rand(360, 100),
         r=np.arange(500.0, 100000.0, 1000.0),

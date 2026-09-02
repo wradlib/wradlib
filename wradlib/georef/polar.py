@@ -1136,9 +1136,13 @@ def georeference(obj, **kwargs):
     cf_by_axis = {c["axis"]: c for c in cf_coords}
     x_attrs = cf_by_axis["X"].copy()
     y_attrs = cf_by_axis["Y"].copy()
+    # overwrite with actual unit
+    # cf_by_axis always returns "metre", even if data is in "US survey feet"
     x_attrs["units"] = trg_crs.axis_info[0].unit_name
     y_attrs["units"] = trg_crs.axis_info[1].unit_name
 
+    # always "metre" since z/gr form their own coordinate system
+    # might have to revisit, if we use real 3D projected CRS or Compound CRS
     z_attrs = {"standard_name": "height_above_ground", "units": "metre"}
     gr_attrs = {"standard_name": "distance_from_radar", "units": "metre"}
 
