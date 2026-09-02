@@ -1052,7 +1052,8 @@ def filter_window_distance(img, rscale, *, fsize=1500, tr1=7):
         count[count == 0] = 1
     similar -= 1
     count -= 1
-    similar = similar / count
+    with np.errstate(divide="ignore", invalid="ignore"):
+        similar = similar / count
     return similar
 
 
