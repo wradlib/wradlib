@@ -1134,11 +1134,14 @@ def georeference(obj, **kwargs):
     # add xyz, ground range coordinates
     cf_coords = trg_crs.cs_to_cf()
     cf_by_axis = {c["axis"]: c for c in cf_coords}
-    x_attrs = cf_by_axis.get("X")
-    y_attrs = cf_by_axis.get("Y")
-    gr_unit = "meters" if trg_crs.is_geographic else x_attrs["units"]
-    z_attrs = {"standard_name": "height_above_ground", "units": "meters"}
-    gr_attrs = {"standard_name": "distance_from_radar", "units": gr_unit}
+    x_attrs = cf_by_axis["X"].copy()
+    y_attrs = cf_by_axis["Y"].copy()
+    x_attrs["units"] = trg_crs.axis_info[0].unit_name
+    y_attrs["units"] = trg_crs.axis_info[1].unit_name
+
+    z_attrs = {"standard_name": "height_above_ground", "units": "metre"}
+    gr_attrs = {"standard_name": "distance_from_radar", "units": "metre"}
+
     obj.coords["x"] = (dimlist, xyz[..., 0], x_attrs)
     obj.coords["y"] = (dimlist, xyz[..., 1], y_attrs)
     obj.coords["z"] = (dimlist, xyz[..., 2], z_attrs)

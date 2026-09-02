@@ -20,6 +20,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 from functools import singledispatch
 
 import numpy as np
+import pyproj
 from xarray import DataArray, Dataset, apply_ufunc
 from xradar.model import get_altitude_attrs, get_range_attrs
 
@@ -304,32 +305,52 @@ def ground_range(points, center, crs):
     center = np.asarray(center)
 
     if crs.is_geographic:
-        # Geographic CRS: use geodesic
-        geod = crs.get_geod()
-        # pyproj.Geod.inv can accept arrays, flatten if necessary
-        lon0 = center[0]
-        lat0 = center[1]
+        # Coordinates are already lon/lat.
+        geod_crs = crs
 
         lon = points[..., 0]
         lat = points[..., 1]
 
-        lon_flat = lon.ravel()
-        lat_flat = lat.ravel()
+        lon0 = center[0]
+        lat0 = center[1]
 
-        _, _, gr = geod.inv(
-            np.full_like(lon_flat, lon0),
-            np.full_like(lat_flat, lat0),
-            lon_flat,
-            lat_flat,
+    elif crs.is_projected:
+        # Transform projected coordinates back to lon/lat.
+        geod_crs = crs.geodetic_crs
+
+        transformer = pyproj.Transformer.from_crs(
+            crs,
+            geod_crs,
+            always_xy=True,
         )
-        return gr.reshape(lon.shape)  # in meters
+
+        lon, lat = transformer.transform(
+            points[..., 0],
+            points[..., 1],
+        )
+
+        lon0, lat0 = transformer.transform(
+            center[0],
+            center[1],
+        )
+
     else:
-        # Projected CRS: Euclidean distance in CRS units
-        dx = points[..., 0] - center[0]
-        dy = points[..., 1] - center[1]
-        # Assume CRS units are meters (check crs.axis_info[0].unit_name if needed)
-        gr = np.sqrt(dx**2 + dy**2)
-        return gr
+        raise ValueError("Given CRS is neither geographic nor projected.")
+
+    # Geodesic distance on the ellipsoid, in meters.
+    geod = geod_crs.get_geod()
+
+    lon_flat = np.asarray(lon).ravel()
+    lat_flat = np.asarray(lat).ravel()
+
+    _, _, gr = geod.inv(
+        np.full_like(lon_flat, lon0),
+        np.full_like(lat_flat, lat0),
+        lon_flat,
+        lat_flat,
+    )
+
+    return gr.reshape(np.asarray(lon).shape)
 
 
 class GeorefMiscMethods:

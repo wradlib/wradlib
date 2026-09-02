@@ -1607,11 +1607,11 @@ def test_georeference_dataset(xr_data):
 
 
 @pytest.mark.parametrize(
-    "crs,gr_follows_x",
-    [(None, True), (4979, False), (3433, True)],
-    ids=["aeqd", "geographic", "projected_feet"],
+    "crs",
+    [None, 4979, 3433, 3857],
+    ids=["aeqd", "geographic", "projected_feet", "projected_metre"],
 )
-def test_georeference_z_gr_units(crs, gr_follows_x):
+def test_georeference_z_gr_units(crs):
     # z is a beam height in meters whatever the target CRS is, so it must not
     # inherit the units of x as it did before GH791. gr keeps the CRS units,
     # which ground_range only computes in meters for a geographic CRS.
@@ -1625,8 +1625,14 @@ def test_georeference_z_gr_units(crs, gr_follows_x):
     )
     da = georef.georeference(da, crs=crs)
 
-    assert da.z.attrs["units"] == "meters"
-    assert da.gr.attrs["units"] == (da.x.attrs["units"] if gr_follows_x else "meters")
+    crs = georef.ensure_crs(crs)
+    x_unit = "metre" if crs is None else crs.axis_info[0].unit_name
+    y_unit = "metre" if crs is None else crs.axis_info[1].unit_name
+    assert da.x.attrs["units"] == x_unit
+    assert da.x.attrs["units"] == y_unit
+    assert da.z.attrs["units"] == "metre"
+    assert da.gr.attrs["units"] == "metre"
+
     # z really is in meters, it would be O(1) if it had been left in degrees
     assert da.z.max() > 1000.0
 
