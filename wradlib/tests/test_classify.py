@@ -3,6 +3,7 @@
 # Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -59,6 +60,18 @@ def test_filter_window_distance():
     similarx = img_arr.wrl.classify.filter_window_distance(fsize=300, tr1=4)
     resultx = similarx < 0.3
     assert (resultx.values == cl).all()
+
+
+def test_filter_window_distance_nan_neighborhood():
+    rscale = 250
+    fsize = 300
+    # create image with a block of NaNs larger than the window
+    img = np.ones((36, 20), dtype=np.float64)
+    img[10:14, 10:16] = np.nan
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        similar = classify.filter_window_distance(img, rscale, fsize=fsize, tr1=4)
+    assert np.all(np.isnan(similar[10:14, 10:16]))
 
 
 def test_filter_gabella():
