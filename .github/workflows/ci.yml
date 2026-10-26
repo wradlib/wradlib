@@ -329,7 +329,7 @@ jobs:
           cd docs
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           # debug
-          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+          pytest -n auto --verbose --durations=15 --cov-report xml:../coverage.xml --cov=wradlib --pyargs notebooks
       - name: Build output
         run: |
           cd docs
@@ -398,7 +398,7 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+          pytest -n auto --verbose --durations=15 --cov-report xml:../coverage.xml --cov=wradlib --pyargs notebooks
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
