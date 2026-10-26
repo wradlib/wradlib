@@ -328,8 +328,10 @@ jobs:
           # create folder structure with all needed files, but *.md
           cd docs
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
+          cd ..
           # debug
-          pytest -n auto --verbose --durations=15 --cov-report xml:../coverage.xml --cov=wradlib --pyargs notebooks
+          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs docs/notebooks
+          test -f coverage.xml"
       - name: Build output
         run: |
           cd docs
@@ -386,7 +388,6 @@ jobs:
       - name: Clone wradlib-notebooks
         run: |
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
-          cd notebooks
       - name: Version Info
         run: |
           echo "WRADLIB_VERSION=`python -c "import wradlib; print(wradlib.version.version)"`"
@@ -398,7 +399,8 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-          pytest -n auto --verbose --durations=15 --cov-report xml:../coverage.xml --cov=wradlib --pyargs notebooks
+          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks/notebooks
+          test -f coverage.xml
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
