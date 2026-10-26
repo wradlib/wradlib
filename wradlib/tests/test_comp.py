@@ -10,7 +10,6 @@ import pytest
 import xarray as xr
 import xradar as xd
 from open_radar_data import DATASETS
-from xradar.io.backends import open_odim_datatree
 
 from wradlib import comp, georef, io, ipol
 
@@ -262,7 +261,7 @@ def test_sweep_to_raster_geographic():
 
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
     filename = get_wradlib_data_file(filename)
-    sweep = open_odim_datatree(filename)
+    sweep = xr.open_datatree(filename, engine="odim")
     sweep = sweep["sweep_0"].to_dataset(inherit="all_coords")
     sweep = xd.georeference.get_x_y_z(sweep)
 
@@ -316,7 +315,7 @@ def test_sweep_to_raster_geographic():
 def test_sweep_to_raster():
 
     filename = DATASETS.fetch("71_20181220_060628.pvol.h5")
-    datatree = xd.io.open_odim_datatree(filename)
+    datatree = xr.open_datatree(filename, engine="odim")
     sweep = datatree["sweep_0"].to_dataset(inherit="all_coords")
 
     location = (sweep.longitude.values, sweep.latitude.values)

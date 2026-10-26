@@ -7,6 +7,17 @@ import xarray as xr
 
 from wradlib import georef, io, util
 
+
+# silence wradlib's warnings
+def pytest_configure(config):
+    funcs = ["create_osr", "projstr_to_osr", "epsg_to_osr", "wkt_to_osr"]
+    for func in funcs:
+        config.addinivalue_line(
+            "filterwarnings",
+            rf"ignore:{func} is deprecated:Warning",
+        )
+
+
 wradlib_data = util.import_optional("wradlib_data", dep="devel")
 
 

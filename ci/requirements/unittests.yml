@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python>=3.11
+  - python>=3.12
   - bottleneck
   - cartopy
   - codecov
@@ -19,7 +19,7 @@ dependencies:
   - netCDF4
   - numpy
   - matplotlib-base
-  - open-radar-data >=0.7.0
+  - open-radar-data >=0.9.0
   - pip
   - pooch
   - pyproj
@@ -34,6 +34,6 @@ dependencies:
   - setuptools
   - wradlib_data
   - xarray >=2026.4.0
-  - xradar >=0.12.0
+  - xradar >=0.13.0
   - xhistogram
   - xmltodict

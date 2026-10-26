@@ -40,7 +40,7 @@ import xarray as xr
 from scipy import ndimage, stats
 from xradar.model import sweep_vars_mapping
 
-from wradlib import dp, util
+from wradlib import util
 
 #: Precipitation Types Mapping for HMC
 pr_types = {
@@ -760,7 +760,7 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
         if key not in tkeys:
             continue
         if key in ["zdr", "rho", "phi"]:
-            d = dp.texture(dat[key])
+            d = util.texture(dat[key])
         else:
             d = dat[key]
         qres[key] = 1.0 - util.trapezoid(
