@@ -308,7 +308,7 @@ def create_crs(projname, **kwargs):
     deprecated_in="2.4",
     removed_in="3.0",
     current_version=version.version,
-    details="Use `pyproj.CRS.from_proj4` instead.",
+    details="Use `pyproj.CRS.to_proj4` instead.",
 )
 def projstr_to_osr(projstr):
     """Transform a PROJ string to an osr spatial reference object

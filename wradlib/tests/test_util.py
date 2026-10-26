@@ -466,5 +466,5 @@ def test_texture(texture_data):
 
 
 def test_texture_xarray(gamic_swp):
-    gamic_swp.wrl.dp.texture()
-    gamic_swp.PHIDP.wrl.dp.texture()
+    gamic_swp.wrl.util.texture()
+    gamic_swp.PHIDP.wrl.util.texture()

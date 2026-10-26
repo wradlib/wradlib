@@ -403,7 +403,7 @@ def _interpolate_mapping(src, trg, **kwargs):
         dask="parallelized",
         kwargs=kwargs,
         output_dtypes=output_dtypes,
-        output_sizes=sizes,
+        dask_gufunc_kwargs=dict(output_sizes=sizes),
         on_missing_core_dim="copy",
     )
 
