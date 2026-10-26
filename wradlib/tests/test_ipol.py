@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from wradlib import georef, ipol
+from wradlib import georef, ipol, vpr
 
 from . import requires_gdal
 
@@ -579,6 +579,27 @@ def test_interpolate():
     vals[3:5, :, 1] = np.nan
     with pytest.raises(NotImplementedError):
         ipol.interpolate(src, trg, vals, ipol.Idw, nnearest=2)
+
+
+def test_idw_remove_missing_all_neighbours_missing():
+    # a target point whose neighbours are all NaN is NaN, not 0 (and not masked)
+    src = np.array([[0.0, 0.0], [1.0, 0.0], [10.0, 0.0], [11.0, 0.0]])
+    trg = np.array([[0.5, 0.0], [10.5, 0.0]])
+    vals = np.array([np.nan, np.nan, 20.0, np.nan])
+    idw = ipol.Idw(src, trg, nnearest=2, remove_missing=True)
+    result = idw(vals)
+    assert not np.ma.isMaskedArray(result)
+    np.testing.assert_array_equal(result, [np.nan, 20.0])
+    # the same for 2-d values (e.g. several times)
+    result = idw(np.column_stack([vals, vals]))
+    np.testing.assert_array_equal(result, [[np.nan, np.nan], [20.0, 20.0]])
+    # CartesianVolume (CAPPI, PseudoCAPPI) writes the result into a plain array
+    src3 = np.column_stack([src, np.zeros(len(src))])
+    trg3 = np.column_stack([trg, np.zeros(len(trg))])
+    vol = vpr.CartesianVolume(
+        src3, trg3, ipclass=ipol.Idw, nnearest=2, remove_missing=True
+    )
+    np.testing.assert_array_equal(vol(vals), [np.nan, 20.0])
 
 
 def test_interpolate_polar():
