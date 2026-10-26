@@ -11,7 +11,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Maintenance**
 
-* MNT: update handling of DeprecationWarning and FutureWarning ({pull}`797`) by {at}`kmuehlbauer`
+* MNT: update CI pinnings (python >=3.12, xradar >=0.13, open-radar-data >=0.9.0), test python 3.12/3.15, update handling of DeprecationWarning and FutureWarning ({pull}`797`) by {at}`kmuehlbauer`
 
 ## Version 2.9.6
 
