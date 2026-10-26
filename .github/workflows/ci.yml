@@ -331,7 +331,7 @@ jobs:
           cd ..
           # debug
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs docs/notebooks
-          test -f coverage.xml"
+          test -f coverage.xml
       - name: Build output
         run: |
           cd docs
