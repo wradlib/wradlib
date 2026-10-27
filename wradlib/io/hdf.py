@@ -341,7 +341,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
         try:
             f["how"].attrs.get("software")
         except KeyError as err:
-            raise OSError("File {filename} is no GAMIC hdf5 type!") from err
+            raise OSError(f"File {filename} is no GAMIC hdf5 type!") from err
 
         # get scan_type (PVOL or RHI)
         scan_type = f["what"].attrs.get("object")

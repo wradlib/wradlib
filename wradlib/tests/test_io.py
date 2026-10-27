@@ -338,6 +338,17 @@ def test_read_gamic_hdf5(file_or_filelike):
 
 
 @requires_h5py
+def test_read_gamic_hdf5_error_names_file(tmp_path):
+    import h5py
+
+    fname = tmp_path / "not_gamic.h5"
+    with h5py.File(fname, "w") as f:
+        f.create_group("what")
+    with pytest.raises(OSError, match="not_gamic.h5 is no GAMIC hdf5 type"):
+        io.hdf.read_gamic_hdf5(fname)
+
+
+@requires_h5py
 def test_to_hdf5():
     arr = np.zeros((124, 248), dtype=np.int16)
     metadata = {"test": 12.0}
