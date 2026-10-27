@@ -72,6 +72,30 @@ def test_togrid(comp_data):
     )
 
 
+@pytest.mark.parametrize("quality_dtype", [np.int32, np.float64])
+@pytest.mark.parametrize("shape", [(7,), (1, 7)])
+def test_compose_ko_missing_radar_data(quality_dtype, shape):
+    radargrids = [
+        np.array([np.nan, 0.0, np.nan, 4.0, 6.0, np.nan, 1.0]).reshape(shape),
+        np.array([2.0, 2.0, np.nan, np.nan, 7.0, 3.0, 8.0]).reshape(shape),
+    ]
+    qualitygrids = [
+        np.array([2, 2, 3, 1, 1, 1, 1], dtype=quality_dtype).reshape(shape),
+        np.array([1, 1, 4, 2, 2, 2, 1], dtype=quality_dtype).reshape(shape),
+    ]
+    original_radar = [grid.copy() for grid in radargrids]
+    original_quality = [grid.copy() for grid in qualitygrids]
+
+    composite = comp.compose_ko(radargrids, qualitygrids)
+
+    np.testing.assert_equal(
+        composite, np.array([2.0, 0.0, np.nan, 4.0, 7.0, 3.0, 1.0]).reshape(shape)
+    )
+    assert len(radargrids) == len(qualitygrids) == 2
+    np.testing.assert_equal(radargrids, original_radar)
+    np.testing.assert_equal(qualitygrids, original_quality)
+
+
 def test_compose():
     g1 = np.array(
         [
