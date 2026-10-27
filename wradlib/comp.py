@@ -306,12 +306,12 @@ def compose_weighted(radargrids, qualitygrids):
 
 @compose_weighted.register(xr.DataArray)
 def _compose_weighted_xarray(radargrids, qualitygrids):
-    qualityinfo = qualitygrids.where(radargrids)
+    qualityinfo = qualitygrids.where(radargrids.notnull())
     qualityinfo /= qualityinfo.sum("radar", skipna=True)
     composite = (radargrids * qualityinfo).sum("radar", skipna=True)
     composite.name = radargrids.name
     composite.attrs = radargrids.attrs
-    return composite.where(radargrids.sum("radar"))
+    return composite.where(radargrids.notnull().any("radar"))
 
 
 def transform_binned(sweep, raster):
