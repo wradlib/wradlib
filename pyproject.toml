@@ -137,3 +137,8 @@ testpaths = "wradlib/tests"
 log_cli_level = "INFO"
 xfail_strict = true
 addopts = ["-ra", "--strict-config", "--strict-markers"]
+
+[tool.coverage.run]
+patch = ["subprocess"]
+source = ["wradlib"]
+parallel = true
