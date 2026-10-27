@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.9.8
+
+**Bugfixes**
+
+* {class}`wradlib.ipol.Idw` with `remove_missing=True` returns NaN instead of 0 for target points where all neighbours are missing, so {class}`wradlib.vpr.CAPPI` and {class}`wradlib.vpr.PseudoCAPPI` no longer fill clear air with 0 ({issue}`795`, {pull}`800`) by {at}`syedhamidali`
+
 ## Version 2.9.7
 
 **Maintenance**
