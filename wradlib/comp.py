@@ -229,6 +229,7 @@ def compose_ko(radargrids, qualitygrids):
     )
     qualitygrids.append(qualityfallback)
     qualityinfo = np.array(qualitygrids)
+    qualityinfo[np.isnan(radarinfo)] = -np.inf
 
     select = np.nanargmax(qualityinfo, axis=0)
     composite = radarinfo.reshape((radarinfo.shape[0], -1))[
