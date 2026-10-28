@@ -17,6 +17,7 @@ from . import (
     gdal,
     get_wradlib_data_file,
     osr,
+    requires_dask,
     requires_gdal,
     rioxarray,
 )
@@ -278,6 +279,44 @@ def test_compose():
     )
     np.testing.assert_allclose(composite, res)
     np.testing.assert_allclose(composite1, res1)
+
+
+@pytest.mark.parametrize("lazy", [False, pytest.param(True, marks=requires_dask)])
+@pytest.mark.parametrize("radar_last", [False, True])
+def test_compose_weighted_xarray_valid_data(lazy, radar_last):
+    radargrids = xr.DataArray(
+        [
+            [0.0, np.nan, 0.0, -1.0, np.nan, 2.0, 2.0],
+            [2.0, 2.0, 0.0, 1.0, np.nan, np.nan, 6.0],
+        ],
+        dims=("radar", "x"),
+        coords={"radar": ["a", "b"], "x": np.arange(7)},
+        name="DBZH",
+        attrs={"units": "dBZ"},
+    )
+    qualitygrids = xr.ones_like(radargrids)
+    qualitygrids[1, -1] = 3.0
+    if lazy:
+        radargrids = radargrids.chunk({"x": 2})
+        qualitygrids = qualitygrids.chunk({"x": 2})
+    if radar_last:
+        radargrids = radargrids.transpose("x", "radar")
+        qualitygrids = qualitygrids.transpose("x", "radar")
+    original_radar = radargrids.copy(deep=True)
+    original_quality = qualitygrids.copy(deep=True)
+
+    composite = radargrids.wrl.comp.compose_weighted(qualitygrids).compute()
+
+    expected = xr.DataArray(
+        [1.0, 2.0, 0.0, 0.0, np.nan, 2.0, 5.0],
+        dims="x",
+        coords={"x": np.arange(7)},
+        name="DBZH",
+        attrs={"units": "dBZ"},
+    )
+    xr.testing.assert_identical(composite, expected)
+    xr.testing.assert_identical(radargrids, original_radar)
+    xr.testing.assert_identical(qualitygrids, original_quality)
 
 
 @requires_gdal
