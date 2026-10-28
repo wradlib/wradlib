@@ -339,7 +339,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
 
         # check if GAMIC file and
         try:
-            f["how"].attrs.get("software")
+            f["how"].attrs["software"]
         except KeyError as err:
             raise OSError(f"File {filename} is no GAMIC hdf5 type!") from err
 
