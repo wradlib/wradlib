@@ -338,6 +338,22 @@ def test_read_gamic_hdf5(file_or_filelike):
 
 
 @requires_h5py
+@pytest.mark.parametrize("with_how", [False, True])
+def test_read_gamic_hdf5_not_gamic(tmp_path, with_how):
+    import h5py
+
+    # a file without a "how" group, or with one but no "software"
+    # attribute, is not a GAMIC file
+    fname = tmp_path / "not_gamic.h5"
+    with h5py.File(fname, "w") as f:
+        f.create_group("what")
+        if with_how:
+            f.create_group("how")
+    with pytest.raises(OSError, match="not_gamic.h5 is no GAMIC hdf5 type"):
+        io.hdf.read_gamic_hdf5(fname)
+
+
+@requires_h5py
 def test_to_hdf5():
     arr = np.zeros((124, 248), dtype=np.int16)
     metadata = {"test": 12.0}
