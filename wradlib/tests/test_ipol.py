@@ -195,6 +195,34 @@ def test_Nearest_1(ipol_data):
     assert np.allclose(res, np.array([3.0, 3.0, 3.0, 1.0]))
 
 
+def test_nearest_distance_upper_bound():
+    # source: 3 points along y=0
+    src = xr.Dataset(
+        {"v": ("p", [1.0, 2.0, 3.0])},
+        coords={"x": ("p", [0.0, 1.0, 2.0]), "y": ("p", [0.0, 0.0, 0.0])},
+    )
+    # 2 x 2 target grid, partly far away from the source points
+    trg = xr.Dataset(coords={"x": [0.0, 10.0], "y": [0.0, 10.0]})
+
+    expected = np.array([[1.0, np.nan], [np.nan, np.nan]])
+
+    # plain maxdist
+    actual = src.wrl.ipol.interpolate(trg, method="nearest", maxdist=1.5).v.values
+    np.testing.assert_array_equal(actual, expected)
+
+    # should also give same output with distance_upper_bound
+    actual = src.wrl.ipol.interpolate(
+        trg, method="nearest", distance_upper_bound=1.5
+    ).v.values
+    np.testing.assert_array_equal(actual, expected)
+
+    # scream if user want to use maxdist larger than tree's distance_upper_bound
+    with pytest.raises(ValueError, match="exceeds mappings's distance_upper_bound"):
+        src.wrl.ipol.interpolate(
+            trg, method="nearest", maxdist=10, distance_upper_bound=1.5
+        )
+
+
 def test_idw_xarray(gamic_swp, dem_bonn):
     swp = (
         gamic_swp.copy()

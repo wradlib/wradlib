@@ -194,19 +194,27 @@ def _create_tree(src, **kwargs):
 
 
 def _call_nearest(vals, ix, dists, n=1, maxdist=None, **kwargs):
-    # get first neighbour
-    trgvals = vals[ix[:, 0]]
+    # get first neighbour, mask scipy inf
+    idx = ix[:, 0]
+    valid = (idx < len(vals)) & np.isfinite(dists[:, 0])
+    trgvals = vals[np.where(valid, idx, 0)].astype(float, copy=True)
+    trgvals[~valid] = np.nan
     dist_n = dists[..., 0].copy()
 
     # iteratively fill NaN with next neighbours
     isnan = np.isnan(trgvals)
-    if n > 1 & np.count_nonzero(isnan):
+    if (n > 1) and np.any(isnan):
         for i in range(n - 1):
-            nanidx = np.argwhere(isnan)[..., 0]
-            trgvals[isnan] = vals[ix[:, i + 1]][isnan]
-            dist_n[nanidx] = dists[..., i + 1][nanidx]
+            # get neighbour, mask scipy inf
+            idx = ix[:, i + 1]
+            valid = (idx < len(vals)) & np.isfinite(dists[:, i + 1])
+            isnan &= valid
+
+            trgvals[isnan] = vals[np.where(valid, idx, 0)][isnan]
+            dist_n[isnan] = dists[..., i + 1][isnan]
+
             isnan = np.isnan(trgvals)
-            if not np.count_nonzero(isnan):
+            if not np.any(isnan):
                 break
 
     if maxdist is None:
@@ -366,11 +374,22 @@ def _interpolate_mapping(src, trg, **kwargs):
     vectorize = not set(src_stacked.dims) <= {"npoints1"}
 
     # maxdist
-    # hack: preventing interpolation outside domain
-    maxdist = np.sqrt(
-        (trg_x_coord[1] - trg_x_coord[0]) ** 2 + (trg_y_coord[1] - trg_y_coord[0]) ** 2
-    ).values * np.sqrt(2)
-    kwargs.setdefault("maxdist", maxdist)
+    if (maxdist := kwargs.get("maxdist")) is not None:
+        # check for distance_upper_bound query
+        bound = trg.attrs["query_kwargs"].get("distance_upper_bound", np.inf)
+        if maxdist > bound:
+            raise ValueError(
+                f"maxdist ({maxdist}) exceeds mappings's "
+                f"distance_upper_bound ({bound}). "
+                "Decrease maxdist or rebuild the mapping with a larger bound."
+            )
+    else:
+        # hack: preventing interpolation outside domain
+        maxdist = np.sqrt(
+            (trg_x_coord[1] - trg_x_coord[0]) ** 2
+            + (trg_y_coord[1] - trg_y_coord[0]) ** 2
+        ).values * np.sqrt(2)
+        kwargs["maxdist"] = maxdist
 
     # determine output dtypes
     if isinstance(src_stacked, xr.DataArray):
