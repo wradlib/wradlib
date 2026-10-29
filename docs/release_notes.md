@@ -16,6 +16,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * select available radar observations when composing NumPy grids by quality ({pull}`802`) by {at}`antonsoo`
 * preserve zero reflectivity and mask missing radar contributions in xarray weighted composites ({pull}`801`) by {at}`antonsoo`
 * FIX: show filename in read_gamic_hdf5 error for non-GAMIC files ({pull}`803`) by {at}`syahra712`
+* FIX: Handle missing neighbours returned by SciPy’s ``distance_upper_bound`` and raise a ValueError when ``maxdist`` exceeds the KDTree’s bound, added tests ({issue}`796`) by {at}`syedhamidali`, ({pull}`805`) by {at}`kmuehlbauer`
 
 ## Version 2.9.7
 
