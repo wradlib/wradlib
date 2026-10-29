@@ -406,6 +406,7 @@ def _interpolate_mapping(src, trg, **kwargs):
         x = kwargs.pop("x")
         y = kwargs.pop("y")
         func = kwargs.pop("func")
+        kwargs["n"] = kwargs.pop("k")
         out = func(src_vals, ix, dists, **kwargs)
         out = out.reshape((y, x))
         return out
