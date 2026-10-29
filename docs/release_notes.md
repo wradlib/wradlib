@@ -13,6 +13,8 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * {class}`wradlib.ipol.Idw` with `remove_missing=True` returns NaN instead of 0 for target points where all neighbours are missing, so {class}`wradlib.vpr.CAPPI` and {class}`wradlib.vpr.PseudoCAPPI` no longer fill clear air with 0 ({issue}`795`, {pull}`800`) by {at}`syedhamidali`
 * FIX: code coverage for notebooks is adapted to changes in recent `coveragepy` and `pytest-cov`, according versions are pinned, `.coveragerc` is removed in favour of `pyproject.toml` entry ({pull}`804`) by {at}`kmuehlbauer`
+* select available radar observations when composing NumPy grids by quality ({pull}`802`) by {at}`antonsoo`
+* preserve zero reflectivity and mask missing radar contributions in xarray weighted composites ({pull}`801`) by {at}`antonsoo`
 
 ## Version 2.9.7
 
