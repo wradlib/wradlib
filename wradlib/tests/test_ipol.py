@@ -229,8 +229,6 @@ def test_nearest_distance_upper_bound(k):
             trg, method="nearest", maxdist=9, distance_upper_bound=1.5
         )
 
-    assert 1 == 2
-
 
 def test_idw_xarray(gamic_swp, dem_bonn):
     swp = (
