@@ -26,6 +26,7 @@ __all__ = [
     "fuzzyfi",
     "probability",
     "classify",
+    "convective_steiner",
     "create_gpm_observations",
     "create_gr_observations",
     "calculate_hmpr",
@@ -40,7 +41,7 @@ import xarray as xr
 from scipy import ndimage, stats
 from xradar.model import sweep_vars_mapping
 
-from wradlib import util
+from wradlib import trafo, util
 
 #: Precipitation Types Mapping for HMC
 pr_types = {
@@ -1524,6 +1525,197 @@ def calculate_hmpr(obs, weights, centroids):
     return hmpr
 
 
+def _steiner_background(data, bkg_radius, rscale):
+    """Background reflectivity (mean of valid gates within ``bkg_radius``).
+
+    ``data`` is a 2-D (azimuth, range) sweep in dBZ with nodata as NaN.
+    Returns the background in dBZ and the valid-data fraction per circle.
+    """
+    valid = (~np.isnan(data)).astype(float)
+    linear = np.nan_to_num(trafo.idecibel(data), nan=0.0)
+    num = util.filter_window_polar(linear, bkg_radius, "uniform", rscale)
+    den = util.filter_window_polar(valid, bkg_radius, "uniform", rscale)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mean = num / np.where(den > 0, den, np.nan)
+        background = 10.0 * np.log10(np.where(mean > 0, mean, np.nan))
+    return background, den
+
+
+@singledispatch
+def convective_steiner(
+    data,
+    rscale,
+    *,
+    intense=40.0,
+    bkg_radius=10_000.0,
+    min_reflectivity=10.0,
+    peakedness_min=35.0,
+    expand=True,
+    coverage=0.75,
+    nodata_threshold=-32.0,
+):
+    """Steiner et al. (1995) convective/stratiform classification of a polar sweep.
+
+    For each gate the classification combines an absolute intensity criterion
+    (reflectivity above ``intense``) with a peakedness criterion (reflectivity
+    prominent above its local background). Detected convective cores are then
+    expanded by a background-dependent radius. Gates without data are never
+    classified as convective.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        2-D polar reflectivity in dBZ (azimuth, range), with nodata as NaN
+    rscale : float
+        range [m] scale of the polar grid
+
+    Keyword Arguments
+    -----------------
+    intense : float
+        Reflectivity [dBZ] above which a gate is convective regardless of its
+        background
+    bkg_radius : float
+        Radius [m] of the circle over which the background reflectivity is
+        averaged
+    min_reflectivity : float
+        Minimum reflectivity [dBZ] for a gate to be flagged convective
+    peakedness_min : float
+        Reflectivity [dBZ] above which the peakedness criterion is evaluated
+    expand : bool
+        Whether to expand detected cores by a background-dependent radius
+    coverage : float
+        Minimum valid-data fraction within ``bkg_radius`` for the peakedness
+        criterion to be applied
+    nodata_threshold : float
+        Reflectivity [dBZ] at or below which a gate is treated as nodata
+
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        Boolean array with the same shape as ``data``, True where the echo is
+        classified as convective.
+
+    References
+    ----------
+    Steiner, M., Houze Jr., R.A., Yuter, S.E., 1995: Climatological
+    Characterization of Three-Dimensional Storm Structure from Operational
+    Radar and Rain Gauge Data. J. Appl. Meteor. 34, 1975-2005.
+
+    See Also
+    --------
+    :func:`~wradlib.classify.classify_echo_fuzzy` - fuzzy echo classification
+    """
+    nodata = np.isnan(data) | (data <= nodata_threshold)
+    masked = np.where(nodata, np.nan, data)
+
+    background, valid_fraction = _steiner_background(masked, bkg_radius, rscale)
+    covered = valid_fraction >= coverage
+
+    conv = masked >= intense
+
+    # Steiner's peakedness threshold above the background
+    difference = 10.0 - background**2 / 180.0
+    conv = conv | (
+        (masked > peakedness_min)
+        & ~np.isnan(background)
+        & (background > 0)
+        & (background < 42)
+        & (masked - difference > background)
+        & covered
+    )
+
+    if expand:
+        # convective core radius by background bin
+        steps = (
+            (None, 25.0, 1000.0),
+            (25.0, 30.0, 2000.0),
+            (30.0, 35.0, 3000.0),
+            (35.0, 40.0, 4000.0),
+            (40.0, None, 5000.0),
+        )
+        cores = conv.copy()
+        for lower, upper, radius in steps:
+            in_step = ~np.isnan(background)
+            if lower is not None:
+                in_step = in_step & (background >= lower)
+            if upper is not None:
+                in_step = in_step & (background < upper)
+            temp = (cores & in_step).astype(float)
+            dilated = util.filter_window_polar(temp, radius, "maximum", rscale) > 0
+            conv = conv | dilated
+
+    return conv & ~nodata & (data >= min_reflectivity)
+
+
+@convective_steiner.register(xr.DataArray)
+def _convective_steiner_xarray(obj, **kwargs):
+    """Steiner et al. (1995) convective/stratiform classification of a polar sweep.
+
+    For each gate the classification combines an absolute intensity criterion
+    (reflectivity above ``intense``) with a peakedness criterion (reflectivity
+    prominent above its local background). Detected convective cores are then
+    expanded by a background-dependent radius. Gates without data are never
+    classified as convective.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        2d polar reflectivity in dBZ (azimuth, range), with nodata as NaN
+
+    Keyword Arguments
+    -----------------
+    intense : float
+        Reflectivity [dBZ] above which a gate is convective regardless of its
+        background
+    bkg_radius : float
+        Radius [m] of the circle over which the background reflectivity is
+        averaged
+    min_reflectivity : float
+        Minimum reflectivity [dBZ] for a gate to be flagged convective
+    peakedness_min : float
+        Reflectivity [dBZ] above which the peakedness criterion is evaluated
+    expand : bool
+        Whether to expand detected cores by a background-dependent radius
+    coverage : float
+        Minimum valid-data fraction within ``bkg_radius`` for the peakedness
+        criterion to be applied
+    nodata_threshold : float
+        Reflectivity [dBZ] at or below which a gate is treated as nodata
+
+    Returns
+    -------
+    output : :py:class:`xarray:xarray.DataArray`
+        Boolean DataArray named ``convective``, True where the echo is
+        classified as convective.
+
+    References
+    ----------
+    Steiner, M., Houze Jr., R.A., Yuter, S.E., 1995: Climatological
+    Characterization of Three-Dimensional Storm Structure from Operational
+    Radar and Rain Gauge Data. J. Appl. Meteor. 34, 1975-2005.
+
+    See Also
+    --------
+    :func:`~wradlib.classify.classify_echo_fuzzy` - fuzzy echo classification
+    """
+    dim0 = obj.wrl.util.dim0()
+    rscale = obj.range.diff("range").median()
+    out = xr.apply_ufunc(
+        convective_steiner,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=dict(rscale=rscale.values, **kwargs),
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.name = "convective"
+    out.attrs = {
+        "long_name": "convective echo classification (Steiner et al. 1995)",
+    }
+    return out
+
+
 class ClassifyMethods(util.XarrayMethods):
     """wradlib xarray SubAccessor methods for Classify."""
 
@@ -1610,6 +1802,13 @@ class ClassifyMethods(util.XarrayMethods):
             return calculate_hmpr(self, *args, **kwargs)
         else:
             return calculate_hmpr(self._obj, *args, **kwargs)
+
+    @util.docstring(_convective_steiner_xarray)
+    def convective_steiner(self, *args, **kwargs):
+        if not isinstance(self, ClassifyMethods):
+            return convective_steiner(self, *args, **kwargs)
+        else:
+            return convective_steiner(self._obj, *args, **kwargs)
 
     # @util.docstring(_trapezoid_xarray)
     # def trapezoid(self, *args, **kwargs):

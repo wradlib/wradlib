@@ -385,3 +385,75 @@ def test_create_gr_observations():
     out = classify.create_gr_observations(ds, mapping)
 
     assert out.sizes == {"obs": 4, "azimuth": 720, "range": 1832}
+
+
+def _convective_steiner_sweep(values):
+    """A (azimuth, range) sweep of reflectivity in dBZ."""
+    naz, nrng, rscale = 360, 120, 500.0
+    azimuth = np.linspace(0, 360, naz, endpoint=False)
+    range_ = np.arange(nrng, dtype=float) * rscale + rscale / 2
+    data = np.broadcast_to(np.asarray(values, dtype=float), (naz, nrng)).copy()
+    return xr.DataArray(
+        data,
+        dims=("azimuth", "range"),
+        coords={"azimuth": azimuth, "range": range_},
+        name="DBZH",
+    )
+
+
+def _convective_steiner_field(background=20.0):
+    """A sweep filled with a flat background, ready for a core to be planted."""
+    return _convective_steiner_sweep(np.full((360, 120), background))
+
+
+def test_convective_steiner_flat_below_intensity_threshold():
+    assert not classify.convective_steiner(_convective_steiner_sweep(30.0)).values.any()
+
+
+def test_convective_steiner_flat_above_intensity_threshold():
+    """Echo above 40 dBZ is convective whatever it is embedded in."""
+    assert classify.convective_steiner(_convective_steiner_sweep(45.0)).values.all()
+
+
+def test_convective_steiner_isolated_core_expanded():
+    """A 45 dBZ core in a 20 dBZ field expands by the 1 km convective radius."""
+    dbzh = _convective_steiner_field(20.0)
+    dbzh.values[59:62, 59:62] = 45.0
+    result = classify.convective_steiner(dbzh)
+    assert result.values[59:62, 59:62].all()
+    assert result.values[60, 63]  # 2 gates beyond the core
+    assert not result.values[60, 64]
+    assert result.values[57, 60]  # 2 rays beyond the core
+    assert not result.values[56, 60]
+    assert not result.values[200, 100]  # the background stays stratiform
+
+
+def test_convective_steiner_core_found_by_peakedness():
+    """A weak but prominent core is caught by the peakedness criterion."""
+    dbzh = _convective_steiner_field(30.0)
+    dbzh.values[59:62, 59:62] = 38.0
+    result = classify.convective_steiner(dbzh)
+    assert result.values[59:62, 59:62].all()
+    assert result.values[60, 67]  # 3 km expansion: 6 gates
+    assert not result.values[60, 68]
+    assert not result.values[200, 100]
+    # without the peakedness criterion: nothing
+    assert not classify.convective_steiner(dbzh, peakedness_min=39.0).values.any()
+
+
+def test_convective_steiner_accessor():
+    dbzh = _convective_steiner_field(45.0)
+    result = dbzh.wrl.classify.convective_steiner()
+    assert result.values.all()
+    assert result.name == "convective"
+
+
+def test_convective_steiner_unbound_method():
+    """Calling the accessor method unbound dispatches on the passed object."""
+    dbzh = _convective_steiner_field(45.0)
+    result = classify.ClassifyMethods.convective_steiner(dbzh)
+    assert result.values.all()
+    assert result.name == "convective"
+    np.testing.assert_array_equal(
+        result.values, dbzh.wrl.classify.convective_steiner().values
+    )
