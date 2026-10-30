@@ -381,6 +381,7 @@ def test_system_phidp():
     assert res_hist["sysphi_first"].item() == pytest.approx(128.05)
 
 
+@requires_xhistogram
 def test_system_phidp_xarray():
     fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
     with xr.open_dataset(fname, engine="gamic", group="sweep_0") as swp:

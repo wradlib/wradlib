@@ -9,4 +9,5 @@ h5py
 netCDF4
 requests
 rioxarray
+xhistogram
 xmltodict
