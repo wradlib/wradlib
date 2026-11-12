@@ -203,7 +203,7 @@ class ErrorMetrics:
 
     def nash(self):
         """Nash-Sutcliffe Efficiency"""
-        return np.round(1.0 - (self.mse() / np.var(self.obs[self.ix])), 2)
+        return np.round(1.0 - (np.mean(self.resids**2) / np.var(self.obs[self.ix])), 2)
 
     def sse(self):
         """Sum of Squared Errors"""
@@ -211,11 +211,11 @@ class ErrorMetrics:
 
     def mse(self):
         """Mean Squared Error"""
-        return np.round(self.sse() / self.n, 2)
+        return np.round(np.mean(self.resids**2), 2)
 
     def rmse(self):
         """Root Mean Squared Error"""
-        return np.round(self.mse() ** 0.5, 2)
+        return np.round(np.mean(self.resids**2) ** 0.5, 2)
 
     def mas(self):
         """Mean Absolute Error"""
@@ -231,7 +231,7 @@ class ErrorMetrics:
 
     def pbias(self):
         """Percent bias"""
-        return np.round(self.meanerr() * 100.0 / np.mean(self.obs[self.ix]), 1)
+        return np.round(np.mean(self.resids) * 100.0 / np.mean(self.obs[self.ix]), 1)
 
     def all(self):
         """Returns a dictionary of all error metrics"""

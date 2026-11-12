@@ -137,6 +137,22 @@ def test_all_metrics(err_data):
     metrics.all()
 
 
+def test_metrics_not_computed_from_rounded_values():
+    # small values, as for rain rates in mm: rounding the intermediate mse or
+    # mean error to 2 decimals made them 0
+    obs = np.array([0.010, 0.020, 0.030, 0.040])
+    est = obs + np.array([0.004, -0.002, 0.006, 0.008])
+    resids = est - obs
+    metrics = verify.ErrorMetrics(obs, est)
+    np.testing.assert_allclose(metrics.rmse(), np.round(np.sqrt(np.mean(resids**2)), 2))
+    np.testing.assert_allclose(
+        metrics.nash(), np.round(1.0 - np.mean(resids**2) / np.var(obs), 2)
+    )
+    np.testing.assert_allclose(
+        metrics.pbias(), np.round(np.mean(resids) * 100.0 / np.mean(obs), 1)
+    )
+
+
 def test_pprint(err_data):
     metrics = verify.ErrorMetrics(err_data.obs, err_data.est)
     metrics.pprint()
