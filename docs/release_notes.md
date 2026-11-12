@@ -10,6 +10,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 ## Dev
 
 * FIX: missing xhistogram as optional dependency ({pull}`807`) by {at}`egouden`
+* FIX: {class}`wradlib.verify.ErrorMetrics` computes `mse`, `rmse`, `nash` and `pbias` from unrounded intermediate values, which rounded to 0 for small values ({pull}`809`) by {at}`syahra712`
 
 ## Version 2.9.8
 
