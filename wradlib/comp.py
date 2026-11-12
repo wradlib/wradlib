@@ -291,7 +291,8 @@ def compose_weighted(radargrids, qualitygrids):
     :func:`~wradlib.comp.compose_ko`
     """
     radarinfo = np.array(radargrids)
-    qualityinfo = np.array(qualitygrids)
+    # float, so that integer quality grids can be masked with NaN below
+    qualityinfo = np.array(qualitygrids, dtype=float)
     # overall nanmask
     nanmask = np.all(np.isnan(radarinfo), axis=0)
     # quality grids must contain values only where radarinfo does
