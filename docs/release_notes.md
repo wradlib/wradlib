@@ -10,6 +10,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 ## Dev
 
 * FIX: missing xhistogram as optional dependency ({pull}`807`) by {at}`egouden`
+* FIX: {func}`wradlib.comp.compose_weighted` accepts integer quality grids ({pull}`810`) by {at}`syahra712`
 
 ## Version 2.9.8
 
