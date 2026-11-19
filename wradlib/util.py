@@ -404,11 +404,11 @@ def prob_round(x, *, prec=0):
     prec : int
         precision
     """
-    fixup = np.sign(x) * 10**prec
-    x *= fixup
-    intx = x.astype(int)
-    round_func = intx + np.random.binomial(1, x - intx)
-    return round_func / fixup
+    fixup = 10**prec
+    absx = np.abs(x) * fixup
+    intx = absx.astype(int)
+    round_func = intx + np.random.binomial(1, absx - intx)
+    return np.sign(x) * round_func / fixup
 
 
 @singledispatch
