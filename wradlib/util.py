@@ -33,6 +33,7 @@ __all__ = [
     "import_optional",
     "cross_section_ppi",
     "UtilMethods",
+    "prob_round",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -394,17 +395,19 @@ def _filter_window_polar_xarray(obj, **kwargs):
     return out
 
 
-def prob_round(x, *, prec=0):
-    """Round the float number `x` to the lower or higher integer randomly
-    following a binomial distribution
+def prob_round(x, *, precision=0):
+    """Round the float number `x` to the lower or higher
+    decimal number randomly
+    by following a binomial distribution
 
     Parameters
     ----------
     x : float
-    prec : int
-        precision
+        number to be rounded
+    precision : int
+        number of decimals for the rounding
     """
-    fixup = 10**prec
+    fixup = 10**precision
     absx = np.abs(x) * fixup
     intx = absx.astype(int)
     round_func = intx + np.random.binomial(1, absx - intx)
