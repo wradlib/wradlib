@@ -20,6 +20,7 @@ This section provides a collection of example code snippets to show clutter dete
 :maxdepth: 2
 Clutter <clutter/clutter>
 Fuzzy Echo <fuzzy_echo>
+Convective (Steiner) <convective_steiner>
 2D HMC <2d/2d>
 Partitioning Ratio <hmcp/hmcp>
 ```
