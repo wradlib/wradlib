@@ -54,6 +54,19 @@ def test_prob_round():
     np.testing.assert_equal(43.0, util.prob_round(42.4242))
 
 
+def test_prob_round_zero_and_arrays():
+    # zero is returned as zero, not NaN
+    np.testing.assert_equal(util.prob_round(0.0), 0.0)
+    np.testing.assert_equal(util.prob_round(np.array([0.0, 2.0])), [0.0, 2.0])
+    # integer arrays are accepted and the input is not modified
+    x = np.array([-3, 0, 5])
+    np.testing.assert_equal(util.prob_round(x), [-3.0, 0.0, 5.0])
+    np.testing.assert_equal(x, [-3, 0, 5])
+    y = np.array([1.5, -2.5])
+    util.prob_round(y)
+    np.testing.assert_equal(y, [1.5, -2.5])
+
+
 def test_get_wradlib_data():
     data_path = util._get_wradlib_data_path()
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
