@@ -50,8 +50,19 @@ def test_trapezoid():
 def test_prob_round():
     np.random.seed(42)
     np.testing.assert_equal(42.0, util.prob_round(42.4242))
+    np.random.seed(42)
+    np.testing.assert_equal(42.4, util.prob_round(42.4242, precision=1))
     np.random.seed(44)
     np.testing.assert_equal(43.0, util.prob_round(42.4242))
+    np.random.seed(44)
+    np.testing.assert_equal(42.5, util.prob_round(42.4242, precision=1))
+
+
+def test_prob_round_unbiased():
+    np.random.seed(0)
+    for a in [-12.3, 12.3]:
+        result = util.prob_round(a * np.ones(100_000))
+        assert (np.mean(result) - a) < 0.01
 
 
 def test_prob_round_zero_and_arrays():
